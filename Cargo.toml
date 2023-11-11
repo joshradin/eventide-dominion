@@ -1,0 +1,9 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+description = "a rust implementation of Twilight Imperium"
+publish = false
+authors = ["Joshua Radin <joshradin@github.com>"]
