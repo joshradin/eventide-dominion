@@ -1,0 +1,19 @@
+[config]
+default_to_workspace=false
+
+[tasks.build]
+workspace=true
+
+[tasks.serve-backend]
+dependencies = [
+    { name = "serve", path = "crates/server"},
+]
+
+
+[tasks.serve-ui]
+dependencies = [
+    { name = "serve", path = "crates/ui"},
+]
+
+[tasks.serve]
+run_task = { name = ["serve-backend", "serve-ui"], fork=true, parallel=true }

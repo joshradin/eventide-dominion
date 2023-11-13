@@ -1,0 +1,9 @@
+[tasks.build]
+install_crate = { crate_name="trunk"}
+command="trunk"
+args=["build"]
+
+[tasks.serve]
+install_crate = { crate_name="trunk"}
+command="trunk"
+args=["serve"]

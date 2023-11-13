@@ -1,0 +1,23 @@
+[tasks.build-ui]
+command="trunk"
+args=["build"]
+dependencies = ["install_trunk"]
+
+
+[tasks.install_trunk]
+install_crate = {crate_name = "trunk"}
+
+[tasks.hot-build-ui]
+command = "trunk"
+args=["watch"]
+dependencies = ["install_trunk"]
+
+[tasks.run-server]
+install_crate = { crate_name = "cargo-watch"}
+command = "cargo-watch"
+args = [
+    "-x", "run --bin server --features=ssr -- --static ./dist",
+]
+
+[tasks.serve]
+run_task = { name=["hot-build-ui", "run-server"], parallel=true, fork=true }
