@@ -10,8 +10,8 @@ pub struct AppArgs {
     #[clap(flatten)]
     logging: Logging,
     /// Extra paths to static content to serve
-    #[clap(long = "static")]
-    pub static_content: Option<Vec<PathBuf>>,
+    #[clap(long = "static", default_value="static")]
+    pub static_content: PathBuf,
 }
 
 impl AppArgs {

@@ -1,9 +1,13 @@
 [tasks.build]
+clear=true
 install_crate = { crate_name="trunk"}
 command="trunk"
 args=["build"]
+[tasks.build.production]
+args=["build", "--release"]
 
 [tasks.serve]
 install_crate = { crate_name="trunk"}
 command="trunk"
-args=["serve"]
+args=["watch"]
+

@@ -1,8 +1,29 @@
 [config]
 default_to_workspace=false
 
+[tasks.build-production]
+workspace=true
+private=true
+command = "cargo"
+args = ["build", "--release", "--all-features"]
+
+[tasks.build-development]
+workspace=true
+private=true
+command = "cargo"
+args = ["build", "--all-features"]
+
+
 [tasks.build]
 workspace=true
+clear=true
+
+run_task = [
+    { condition= { profiles = ["development"]}, name="build-development"},
+    { condition= { profiles = ["production"]}, name="build-production"},
+]
+
+
 
 [tasks.serve-backend]
 dependencies = [
@@ -17,3 +38,18 @@ dependencies = [
 
 [tasks.serve]
 run_task = { name = ["serve-backend", "serve-ui"], fork=true, parallel=true }
+
+
+[tasks.package]
+clear=true
+script="""
+    mkdir -p $CARGO_MAKE_CRATE_TARGET_DIRECTORY/dist
+    cp  $CARGO_MAKE_CRATE_TARGET_DIRECTORY/debug/server $CARGO_MAKE_CRATE_TARGET_DIRECTORY/dist
+"""
+dependencies = ["build"]
+
+[tasks.package.production]
+script="""
+    mkdir -p $CARGO_MAKE_CRATE_TARGET_DIRECTORY/dist
+    cp  $CARGO_MAKE_CRATE_TARGET_DIRECTORY/release/server $CARGO_MAKE_CRATE_TARGET_DIRECTORY/dist
+"""

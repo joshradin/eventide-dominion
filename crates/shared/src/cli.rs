@@ -1,4 +1,4 @@
-//! Command line interface shared components
+//! Command line interface shared happiness
 
 use crate::logging::LevelFilter;
 use clap::{value_parser, ArgAction, Args};

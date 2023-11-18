@@ -1,0 +1,47 @@
+@use 'sass:color';
+
+$hues: 9;
+@function colors($baseColor) {
+  $sequence: [];
+  @for $i from 0 through ($hues - 1) {
+    $lightness: calc(10% * ($i - floor(calc($hues / 2))));
+    $new: color.adjust($baseColor, $lightness: -$lightness);
+    $sequence: append($sequence, $new)
+  }
+  @return $sequence;
+}
+
+
+$color-list:(
+        primary: #0B6BCB,
+        common-white: #f0f0f0,
+        danger: #E47474,
+        neutral: #6a737c,
+        success: #29a329,
+        warning: #EA9A3E
+);
+
+@function theme-color-key($name, $level: false) {
+  @if $level {
+    @return --palette-#{$name}-#{$level};
+  } @else {
+    @return --palette-#{$name};
+  }
+
+}
+
+/// Get theme color
+@function theme-color($name, $level: false) {
+  @return var(theme-color-key($name, $level))
+}
+
+html {
+  @each $key, $value in $color-list  {
+    #{theme-color-key($key)}: #{$value};
+    @for $i from 1 through $hues {
+      #{theme-color-key($key, $i * 100)}: #{nth(colors($value), $i)};
+    }
+  }
+  --palette-text-primary: #{theme-color("neutral", 800)}
+}
+

@@ -1,0 +1,58 @@
+@use 'sass:color';
+@use 'sass:list';
+@use "scss/themed";
+
+
+@mixin round-corners {
+  border-radius: 5px;
+}
+
+.box {
+  background: #{themed.theme-color("neutral", 100)};
+  width: fit-content;
+}
+
+.outlined {
+  border-width: 1px;
+  border-color: #{themed.theme-color("neutral", 700)};
+  border-style: solid;
+  margin: 5px;
+  padding: 5px
+}
+
+.card {
+  @extend .box;
+  @include round-corners;
+}
+
+.stack {
+  @extend .box;
+  display: flex;
+  &.row {
+    flex-direction: row;
+  }
+  &.row-rev {
+    flex-direction: row-reverse;
+  }
+  &.column {
+    flex-direction: column;
+  }
+  &.column-rev {
+    flex-direction: column-reverse;
+  }
+}
+
+body {
+  background: #{themed.theme-color("neutral", 100)};
+}
+
+button {
+  color: var(--palette-text-primary);
+}
+
+html {
+  color: var(--palette-text-primary);
+}
+* {
+  color: hsl(126, 46%, 63%)
+}
