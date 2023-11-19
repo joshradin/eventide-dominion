@@ -2,7 +2,7 @@
 install_crate = { crate_name = "cargo-watch", test="cargo watch --help" }
 command = "cargo-watch"
 args = [
-    "-x", "run -- --offline --static ../ui/dist",
+    "-x", "run -- --static ../ui/dist",
 ]
 
 

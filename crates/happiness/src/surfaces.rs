@@ -3,8 +3,8 @@
 
 use stylist::ast::Sheet;
 use yew::{Children, function_component, Html, html, Properties};
+use crate::theme::context::use_theme;
 use crate::theme::sx::Sx;
-use crate::theme::use_theme;
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct BoxProps {
@@ -14,7 +14,7 @@ pub struct BoxProps {
     pub children: Children
 }
 
-#[function_component()]
+#[function_component]
 pub fn Box(props: &BoxProps) -> Html {
     let theme = use_theme();
     let sx = &props.sx;
@@ -25,7 +25,7 @@ pub fn Box(props: &BoxProps) -> Html {
         <div class={stylist::css!(
             bgcolor: "red";
         )}>
-
+            { for props.children.clone()}
         </div>
     }
 }

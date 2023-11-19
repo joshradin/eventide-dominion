@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use indexmap::IndexMap;
 use nom::IResult;
+use stylist::Style;
 
 /// Contains CSS definition with some customization
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -16,6 +17,10 @@ impl Sx {
     /// Sets a css property
     pub fn insert<K: AsRef<str>, V: Into<SxValue>>(&mut self, key: K, value: V) {
         self.props.insert(key.as_ref().to_string(), value.into());
+    }
+
+    pub fn to_style(self, theme: &Theme) -> Style {
+        todo!()
     }
 }
 
@@ -137,6 +142,7 @@ macro_rules! sx_impl {
 }
 
 pub use sx;
+use crate::theme::Theme;
 
 #[cfg(test)]
 mod tests {
