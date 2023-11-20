@@ -1,13 +1,12 @@
 //! Contains surfaces
 
-
-use yew::{Children, classes, function_component, Html, html, Properties};
+use yew::{classes, function_component, html, Children, Html, Properties};
 
 #[derive(Debug, PartialEq, Properties)]
 pub struct SurfaceProps {
     pub children: Children,
     #[prop_or_default]
-    pub outlined: bool
+    pub outlined: bool,
 }
 
 #[function_component]

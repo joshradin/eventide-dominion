@@ -10,7 +10,7 @@ pub struct AppArgs {
     #[clap(flatten)]
     logging: Logging,
     /// Extra paths to static content to serve
-    #[clap(long = "static", default_value="static")]
+    #[clap(long = "static", default_value = "static")]
     pub static_content: PathBuf,
 }
 

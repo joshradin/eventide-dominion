@@ -1,11 +1,11 @@
-use uuid::Uuid;
-use yew::{Callback, classes, function_component, html, Html, use_state};
-use yew::platform::spawn_local;
 use ui::components::layout::Stack;
+use uuid::Uuid;
+use yew::platform::spawn_local;
+use yew::{classes, function_component, html, use_state, Callback, Html};
 
-use ui::Request;
-use ui::components::surfaces::*;
 use happiness::surfaces::Box;
+use ui::components::surfaces::*;
+use ui::Request;
 #[function_component]
 fn App() -> Html {
     let uuid = use_state(|| Option::<Uuid>::None);

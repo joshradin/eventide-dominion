@@ -25,8 +25,6 @@ async fn main() {
 
     init_logging(args.level_filter());
 
-
-
     let mut router = Router::new();
     let ref asset = args.static_content;
     info!("serving static content from {asset:?}");
@@ -38,9 +36,8 @@ async fn main() {
             .map(|index| index.path());
         match root_index_html {
             None => {
-                router = router.fallback_service(
-                    ServeDir::new(asset).append_index_html_on_directories(true),
-                );
+                router = router
+                    .fallback_service(ServeDir::new(asset).append_index_html_on_directories(true));
             }
             Some(path) => {
                 router = router.fallback_service(

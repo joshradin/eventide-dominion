@@ -1,8 +1,8 @@
 //! Used for laying out happiness
 
-use std::collections::HashMap;
-use yew::{Children, function_component, Html, html, html_nested, Properties};
 use crate::components::surfaces::Sheet;
+use std::collections::HashMap;
+use yew::{function_component, html, html_nested, Children, Html, Properties};
 
 pub mod flex {
     //! Contains flex enums
@@ -15,20 +15,20 @@ pub mod flex {
         Row,
         RowReverse,
         Column,
-        ColumnReverse
+        ColumnReverse,
     }
 
-    #[derive(Debug, Default, PartialEq, Eq,AsRefStr)]
+    #[derive(Debug, Default, PartialEq, Eq, AsRefStr)]
     pub enum AlignItems {
         #[default]
         FlexStart,
         Center,
         FlexEnd,
         Stretch,
-        Baseline
+        Baseline,
     }
 
-    #[derive(Debug, Default, PartialEq, Eq,AsRefStr)]
+    #[derive(Debug, Default, PartialEq, Eq, AsRefStr)]
     pub enum JustifyContent {
         #[default]
         FlexStart,
@@ -36,7 +36,7 @@ pub mod flex {
         FlexEnd,
         SpaceBetween,
         SpaceAround,
-        SpaceEvenly
+        SpaceEvenly,
     }
 }
 
@@ -51,7 +51,7 @@ pub struct StackProps {
     #[prop_or_default]
     pub justify_content: flex::JustifyContent,
     #[prop_or_default]
-    pub spacing: f64
+    pub spacing: f64,
 }
 
 #[function_component]
@@ -65,5 +65,5 @@ pub fn Stack(props: &StackProps) -> Html {
                 {for props.children.iter()}
             </div>
         </Sheet>
-    }
+    };
 }

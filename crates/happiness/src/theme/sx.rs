@@ -1,16 +1,25 @@
 //! Contains the definition of the `Sx` type and the `sx!` macro
 //!
 //!
+use std::fmt::{Debug, Formatter};
+use std::ops::Index;
 use std::str::FromStr;
+use std::sync::Arc;
 
+use heck::{ToKebabCase, ToTrainCase};
 use indexmap::IndexMap;
-use nom::IResult;
 use stylist::Style;
+
+use crate::theme::{Color, Theme, ThemeMode};
+pub use crate::theme::sx;
+use crate::theme::sx::sx_value_parsing::{parse_sx_value, ParseSxValueError};
+
+mod sx_value_parsing;
 
 /// Contains CSS definition with some customization
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct Sx {
-    props: IndexMap<String, SxValue>
+    props: IndexMap<String, SxValue>,
 }
 
 impl Sx {
@@ -19,32 +28,124 @@ impl Sx {
         self.props.insert(key.as_ref().to_string(), value.into());
     }
 
-    pub fn to_style(self, theme: &Theme) -> Style {
-        todo!()
+    pub fn to_style(self, mode: &ThemeMode, theme: &Theme) -> Style {
+        let props = self
+            .props
+            .into_iter()
+            .map(|(key, value)| {
+                (
+                    key,
+                    {
+                        let mut value = value;
+
+                        loop {
+                            match value {
+                                SxValue::Callback(cb) => {
+                                    value = cb.apply(theme)
+                                },
+                                SxValue::ThemeToken { ref palette, ref selector } => {
+                                    let palette = theme.get_palette(palette).unwrap_or_else(|| panic!("no palette named {palette:?} found"));
+                                    let color = palette.get(selector, mode).unwrap_or_else(|| panic!("Could not find selector {selector:?} in palette"));
+
+                                    break SxValue::Color(color.clone())
+                                }
+                                other => break other,
+                            }
+                        }
+                    },
+                )
+            })
+            .map(|(key, value)| {
+                let css_value = match value {
+                    SxValue::Integer(i) => {
+                        format!("{i}")
+                    }
+                    SxValue::Float(f) => {
+                        format!("{f}")
+                    }
+                    SxValue::Percent(p) => {
+                        format!("{}%", p * 100.0)
+                    }
+                    SxValue::FloatDimension { value, unit } => {
+                        format!("{value}{unit}")
+                    }
+                    SxValue::Dimension { value, unit } => {
+                        format!("{value}{unit}")
+                    }
+                    SxValue::CssLiteral(lit) => {
+                        format!("{lit}")
+                    }
+                    SxValue::String(s) => {
+                        format!("\"{s}\"")
+                    }
+                    SxValue::Color(c) => {
+                        c.to_string()
+                    }
+                    _other => panic!("illegal SxValue at this point: {:?}", _other)
+                };
+
+                format!("{}: {};", key.to_kebab_case(), css_value)
+            })
+            .collect::<String>();
+
+        println!("{props:#?}");
+
+
+        Style::create("happiness", &*props).expect("could not parse string")
+    }
+
+    /// Gets the properties set in this sx
+    pub fn properties(&self) -> impl IntoIterator<Item = &str> {
+        self.props.keys().map(|s| s.as_ref())
+    }
+}
+
+impl Index<&str> for Sx {
+    type Output = SxValue;
+
+    fn index(&self, index: &str) -> &Self::Output {
+        &self.props[index]
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 #[doc(hidden)]
 pub enum SxValue {
-    Integer(i64),
-    Float(f64),
-    Percent(f64),
+    Integer(i32),
+    Float(f32),
+    Percent(f32),
+    FloatDimension { value: f32, unit: String },
+    Dimension { value: i32, unit: String },
     CssLiteral(String),
-    Token {
-        path: Vec<String>
-    }
+    String(String),
+    Color(Color),
+    ThemeToken { palette: String, selector: String },
+    Callback(FnSxValue),
 }
 
-impl From<i64> for SxValue {
-    fn from(value: i64) -> Self {
+impl From<i32> for SxValue {
+    fn from(value: i32) -> Self {
         Self::Integer(value)
     }
 }
 
-impl From<f64> for SxValue {
-    fn from(value: f64) -> Self {
+impl From<f32> for SxValue {
+    fn from(value: f32) -> Self {
         Self::Float(value)
+    }
+}
+
+impl From<&str> for SxValue {
+    fn from(quoted_str: &str) -> Self {
+        let split = quoted_str.split(".").collect::<Vec<_>>();
+        if split.len() == 2 {
+            let palette = split[0].to_string().trim().to_string();
+            let selector = split[1].to_string().trim().to_string();
+
+            SxValue::ThemeToken { palette, selector }
+        } else {
+            quoted_str.parse().unwrap()
+        }
     }
 }
 
@@ -52,97 +153,158 @@ impl FromStr for SxValue {
     type Err = ParseSxValueError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!()
+        parse_sx_value(s)
     }
 }
 
-/// An error occurred while trying to parse this value
-#[derive(Debug, thiserror::Error)]
-pub enum ParseSxValueError {
-
+/// An sx value derived from a function
+#[derive(Clone)]
+pub struct FnSxValue {
+    id: u64,
+    callback: Arc<dyn Fn(&Theme) -> SxValue>,
 }
 
-
-impl TryFrom<&str> for SxValue {
-    type Error = ParseSxValueError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        value.parse()
+impl PartialEq for FnSxValue {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
     }
 }
 
-fn parse_sx_value(s: &str) -> IResult<&str, SxValue> {
-   todo!()
+impl FnSxValue {
+    pub fn new<R, F: Fn(&Theme) -> R + 'static>(callback: F) -> Self
+    where
+        R: Into<SxValue>,
+    {
+        Self {
+            id: rand::random(),
+            callback: Arc::new(move |theme: &Theme| (callback)(theme).into()),
+        }
+    }
+
+    pub fn apply(&self, theme: &Theme) -> SxValue {
+        (self.callback)(theme)
+    }
 }
 
-
-
-
+impl Debug for FnSxValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(&Theme) => SxValue")
+    }
+}
 
 /// Creates [`Sx`][Sx] instances
 #[macro_export]
 macro_rules! sx {
     (
-        $($name:tt : $val:expr),* $(,)?
+        $($json:tt)*
     ) => {
-        $crate::sx_impl!($($name : $val),*)
+        $crate::sx_internal!({ $($json)* })
     }
 }
 
 #[macro_export]
 #[doc(hidden)]
-macro_rules! sx_impl {
-    (
-        $($name:tt : $val:expr),* $(,)?
-    ) => {
+macro_rules! sx_internal {
+
+    // TT parser for objects
+
+    // done
+    (@object $object:ident () () ()) => {
+    };
+
+    // Insert the current entry followed by trailing comma.
+    (@object $object:ident [$key:ident] ($value:expr) , $($rest:tt)*) => {
+        let _ = $object.insert((stringify!($key)).trim(), sx_internal!($value));
+        sx_internal!(@object $object () ($($rest)*) ($($rest)*));
+    };
+
+    // Insert the current entry followed by trailing comma.
+    (@object $object:ident [$($key:tt)+] ($value:expr) , $($rest:tt)*) => {
+        let _ = $object.insert(($($key)+), $value);
+        sx_internal!(@object $object () ($($rest)*) ($($rest)*));
+    };
+
+
+
+     // Next value is a map.
+    (@object $object:ident ($($key:tt)+) (: {$($map:tt)*} $($rest:tt)*) $copy:tt) => {
+       sx_internal!(@object $object [$($key)+] (sx_internal!({$($map)*})) $($rest)*);
+    };
+
+     // Next value is a callback
+    (@object $object:ident ($($key:tt)+) (: |$theme:ident| $func:expr , $($rest:tt)*) $copy:tt) => {
+       sx_internal!(@object $object [$($key)+] (sx_internal!(|$theme| $func)) $($rest)*);
+    };
+
+    // Next value is a callback with no rest
+    (@object $object:ident ($($key:tt)+) (: |$theme:ident| $func:expr) $copy:tt) => {
+       sx_internal!(@object $object [$($key)+] (sx_internal!(|$theme| $func)));
+    };
+
+    // Next value is an expression followed by comma.
+    (@object $object:ident ($($key:tt)+) (: $value:expr , $($rest:tt)*) $copy:tt) => {
+        sx_internal!(@object $object [$($key)+] (sx_internal!($value)) , $($rest)*);
+    };
+
+    // Last value is an expression with no trailing comma.
+    (@object $object:ident ($($key:tt)+) (: $value:expr) $copy:tt) => {
+        sx_internal!(@object $object [$($key)+] ( sx_internal!($value) ) );
+    };
+
+     // Insert the last entry without trailing comma.
+    (@object $object:ident [$key:ident] ($value:expr)) => {
+        let _ = $object.insert((stringify!($key)).trim(), sx_internal!($value));
+    };
+
+     // Insert the last entry without trailing comma.
+    (@object $object:ident [$($key:tt)+] ($value:expr)) => {
+        let _ = $object.insert(($($key)+), sx_internal!($value));
+    };
+
+
+    // Key is fully parenthesized. This avoids clippy double_parens false
+    // positives because the parenthesization may be necessary here.
+    (@object $object:ident () (($key:expr) : $($rest:tt)*) $copy:tt) => {
+        sx_internal!(@object $object ($key) (: $($rest)*) (: $($rest)*));
+    };
+
+    // Refuse to absorb colon token into key expression.
+    (@object $object:ident ($($key:tt)*) (: $($unexpected:tt)+) $copy:tt) => {
+        compile_error!("unexpected colon")
+    };
+
+    // Munch a token into the current key.
+    (@object $object:ident ($($key:tt)*) ($tt:tt $($rest:tt)*) $copy:tt) => {
+        sx_internal!(@object $object ($($key)* $tt) ($($rest)*) ($($rest)*));
+    };
+
+
+    // main implementation
+    ({}) => {
+        crate::theme::sx::Sx::default()
+    };
+
+    ({ $($tt:tt)+ }) => {
         {
-            use $crate::theme::sx::{Sx, sx, SxValue};
-            let mut emit = Sx::default();
+            use $crate::theme::sx::*;
 
-            $(
-                sx_impl!(@ &mut emit, $name: $val);
-            )*
-
-            emit
+            let mut sx: Sx = Sx::default();
+            sx_internal!(@object sx () ($($tt)+) ($($tt)+));
+            sx
         }
     };
-    (@
-        $sx:expr, $prop:literal : $val:literal%
-    ) => {
-        {
-            let mut sx: &mut Sx = $sx;
-            let prop: &str = $prop;
-            let value: SxValue = SxValue::try_from($val).expect("could not convert to sx value");
 
-            sx.insert(prop, value);
-        }
+    (|$theme:ident| $expr:expr) => {
+        SxValue::Callback(FnSxValue::new(|$theme| $expr))
     };
-    (@
-        $sx:expr, $prop:literal : $val:expr
-    ) => {
-        {
-            let mut sx: &mut Sx = $sx;
-            let prop: &str = $prop;
-            let value: SxValue = SxValue::try_from($val).expect("could not convert to sx value");
 
-            sx.insert(prop, value);
-        }
-    };
-    (@
-        $sx:expr, $prop:ident : $val:expr
-    ) => {
-        {
-            let mut sx: &mut Sx = $sx;
-            let prop: &str = stringify!($prop);
-            let value: SxValue = SxValue::try_from($val).expect("could not convert to sx value");
 
-            sx.insert(prop, value);
-        }
+    ($expr:expr) => {
+        SxValue::try_from($expr).expect("could not create sxvalue")
     };
+
+
 }
-
-pub use sx;
-use crate::theme::Theme;
 
 #[cfg(test)]
 mod tests {
@@ -150,12 +312,29 @@ mod tests {
 
     #[test]
     fn create_sx_with_macro() {
+        let sx = sx! {
+            width: "123.5%",
+            p: "background.body",
+        };
+        assert_eq!(
+            sx["p"],
+            SxValue::ThemeToken {
+                palette: "background".to_string(),
+                selector: "body".to_string()
+            }
+        )
+    }
+
+    #[test]
+    fn to_css() {
+        let theme = Theme::default();
 
         let sx = sx! {
-            p: 123,
-            "p": 1,
-            "text-color": "red"
+            padding: "15px",
+            color: "background.body"
         };
-        println!("{sx:#?}");
+
+        let style = sx.to_style(&ThemeMode::default(), &theme);
+        println!("style: {style:#?}");
     }
 }
