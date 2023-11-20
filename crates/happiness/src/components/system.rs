@@ -1,9 +1,11 @@
-//! Surfaces provide work
+//! Contains system components. Not meant for general use
 
-use crate::theme::context::use_theme;
 use crate::theme::sx::Sx;
-use stylist::ast::Sheet;
-use yew::{function_component, html, Children, Html, Properties};
+use yew::html::Children;
+use crate::theme::hooks::use_sx;
+use yew::{function_component, Html, html, Properties};
+
+
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct BoxProps {
@@ -15,15 +17,10 @@ pub struct BoxProps {
 
 #[function_component]
 pub fn Box(props: &BoxProps) -> Html {
-    let theme = use_theme();
-    let sx = &props.sx;
-
-    let sheet = Sheet::new();
+    let sx = use_sx(props.sx.clone());
 
     html! {
-        <div class={stylist::css!(
-            bgcolor: "red";
-        )}>
+        <div class={sx}>
             { for props.children.clone()}
         </div>
     }
@@ -31,12 +28,13 @@ pub fn Box(props: &BoxProps) -> Html {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use yew::ServerRenderer;
+
+    use super::*;
 
     #[tokio::test]
     async fn styled_box() {
-        let renderer = ServerRenderer::<Box>::with_props(|| BoxProps::default());
+        let renderer = ServerRenderer::<Box>::new();
         let s = renderer.render().await;
         println!("{s}");
     }

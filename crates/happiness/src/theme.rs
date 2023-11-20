@@ -1,18 +1,22 @@
 //! Used for theming
 
-mod color;
-
 use std::collections::HashMap;
-pub use color::Color;
-use gloo::utils::document;
 use std::ops::Deref;
+
 use dark_light::Mode;
-use yew::{function_component, hook, html, Children, Html, Properties};
+use yew::Properties;
+
+pub use color::Color;
+use crate::Sx;
+
 use crate::theme::palette::Palette;
 
+mod color;
+
 pub mod context;
-pub mod sx;
+pub mod hooks;
 pub mod palette;
+pub mod sx;
 
 /// The theme kind
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -27,25 +31,16 @@ pub enum ThemeMode {
 }
 
 impl ThemeMode {
-
     /// Detects system mode if possible, but only has effect if
     /// the mode is System
     pub fn detect(self) -> ThemeMode {
         match self {
-            ThemeMode::System => {
-                match dark_light::detect() {
-                    Mode::Dark => {
-                        ThemeMode::Dark
-                    }
-                    Mode::Light => {
-                        ThemeMode::Light
-                    }
-                    Mode::Default => {
-                        ThemeMode::Light
-                    }
-                }
-            }
-            other => other
+            ThemeMode::System => match dark_light::detect() {
+                Mode::Dark => ThemeMode::Dark,
+                Mode::Light => ThemeMode::Light,
+                Mode::Default => ThemeMode::Light,
+            },
+            other => other,
         }
     }
 }
@@ -54,7 +49,7 @@ impl ThemeMode {
 pub struct Theme {
     prefix: String,
     pub mode: ThemeMode,
-    palettes: HashMap<String, Palette>
+    palettes: HashMap<String, Palette>,
 }
 
 impl Default for Theme {
@@ -64,7 +59,6 @@ impl Default for Theme {
         let mut common = theme.palette("common");
         common.insert_constant("white", Color::hex_code(0xFFFFFF));
         common.insert_constant("black", Color::hex_code(0x000000));
-
 
         {
             let mut background = Palette::new();
@@ -77,13 +71,11 @@ impl Default for Theme {
                 Color::Var {
                     name: theme.var_name("common", "white"),
                     fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
-                }
+                },
             );
-
 
             theme.insert_palette("background", background);
         }
-
 
         theme
     }
@@ -119,9 +111,7 @@ impl Theme {
 
     /// Creates a new palette if not yet present, and returns a mutable reference to it.
     pub fn palette(&mut self, name: impl AsRef<str>) -> &mut Palette {
-        self.palettes.entry(name.as_ref().to_string())
-            .or_default()
-
+        self.palettes.entry(name.as_ref().to_string()).or_default()
     }
 
     pub fn var_name(&self, palette: &str, selector: &str) -> String {
@@ -129,10 +119,12 @@ impl Theme {
     }
 
     /// Gets all palettes
-    pub fn palettes(&self) -> impl Iterator<Item=(&str, &Palette)> {
-        self.palettes.iter().map(|(key, value)| {
-            (&**key,
-            value)
-        })
+    pub fn palettes(&self) -> impl Iterator<Item = (&str, &Palette)> {
+        self.palettes.iter().map(|(key, value)| (&**key, value))
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn mount(&self, mount: Sx) -> Result<(), crate::Error> {
+        
     }
 }

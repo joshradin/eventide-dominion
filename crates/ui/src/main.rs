@@ -3,7 +3,7 @@ use uuid::Uuid;
 use yew::platform::spawn_local;
 use yew::{classes, function_component, html, use_state, Callback, Html};
 
-use happiness::surfaces::Box;
+use happiness::{ThemeProvider, CssBaseline, surfaces::Box};
 use ui::components::surfaces::*;
 use ui::Request;
 #[function_component]
@@ -27,19 +27,21 @@ fn App() -> Html {
     };
 
     html! {
-        <Box>
-            <Card outlined=true>
-                <Stack>
-                    if let Some(uuid) = *uuid {
-                        <p>{"Generated Uuid: "}{uuid}</p>
-                    }
-                    <Sheet>
-                        <button onclick={handle_click}>{"Generate new Id!"}</button>
-                    </Sheet>
-                </Stack>
-            </Card>
-        </Box>
-
+        <ThemeProvider>
+            <CssBaseline />
+            <Box>
+                <Card outlined=true>
+                    <Stack>
+                        if let Some(uuid) = *uuid {
+                            <p>{"Generated Uuid: "}{uuid}</p>
+                        }
+                        <Sheet>
+                            <button onclick={handle_click}>{"Generate new Id!"}</button>
+                        </Sheet>
+                    </Stack>
+                </Card>
+            </Box>
+        </ThemeProvider>
     }
 }
 

@@ -1,6 +1,7 @@
 //! Contains the definition of the `Sx` type and the `sx!` macro
 //!
 //!
+use cssparser::{CowRcStr, ToCss};
 use std::fmt::{Debug, Formatter};
 use std::ops::Index;
 use std::str::FromStr;
@@ -8,11 +9,13 @@ use std::sync::Arc;
 
 use heck::{ToKebabCase, ToTrainCase};
 use indexmap::IndexMap;
-use stylist::Style;
+use stylist::ast::Sheet;
+use stylist::{Style, StyleSource};
+use yew::Classes;
 
-use crate::theme::{Color, Theme, ThemeMode};
 pub use crate::theme::sx;
 use crate::theme::sx::sx_value_parsing::{parse_sx_value, ParseSxValueError};
+use crate::theme::{Color, Theme, ThemeMode};
 
 mod sx_value_parsing;
 
@@ -28,32 +31,45 @@ impl Sx {
         self.props.insert(key.as_ref().to_string(), value.into());
     }
 
-    pub fn to_style(self, mode: &ThemeMode, theme: &Theme) -> Style {
+    /// Merges this Sx with another Sx. Uses the left's values for conflicting keys.
+    pub fn merge(self, other: Self) -> Self {
+        let mut sx = self;
+
+        for (prop, value) in other.props {
+            sx.props.entry(prop).or_insert(value);
+        }
+
+        sx
+    }
+
+    pub fn to_css(self, mode: &ThemeMode, theme: &Theme) -> Sheet {
         let props = self
             .props
             .into_iter()
             .map(|(key, value)| {
-                (
-                    key,
-                    {
-                        let mut value = value;
+                (key, {
+                    let mut value = value;
 
-                        loop {
-                            match value {
-                                SxValue::Callback(cb) => {
-                                    value = cb.apply(theme)
-                                },
-                                SxValue::ThemeToken { ref palette, ref selector } => {
-                                    let palette = theme.get_palette(palette).unwrap_or_else(|| panic!("no palette named {palette:?} found"));
-                                    let color = palette.get(selector, mode).unwrap_or_else(|| panic!("Could not find selector {selector:?} in palette"));
+                    loop {
+                        match value {
+                            SxValue::Callback(cb) => value = cb.apply(theme),
+                            SxValue::ThemeToken {
+                                ref palette,
+                                ref selector,
+                            } => {
+                                let palette = theme.get_palette(palette).unwrap_or_else(|| {
+                                    panic!("no palette named {palette:?} found")
+                                });
+                                let color = palette.get(selector, mode).unwrap_or_else(|| {
+                                    panic!("Could not find selector {selector:?} in palette")
+                                });
 
-                                    break SxValue::Color(color.clone())
-                                }
-                                other => break other,
+                                break SxValue::Color(color.clone());
                             }
+                            other => break other,
                         }
-                    },
-                )
+                    }
+                })
             })
             .map(|(key, value)| {
                 let css_value = match value {
@@ -78,20 +94,15 @@ impl Sx {
                     SxValue::String(s) => {
                         format!("\"{s}\"")
                     }
-                    SxValue::Color(c) => {
-                        c.to_string()
-                    }
-                    _other => panic!("illegal SxValue at this point: {:?}", _other)
+                    SxValue::Color(c) => c.to_string(),
+                    _other => panic!("illegal SxValue at this point: {:?}", _other),
                 };
 
                 format!("{}: {};", key.to_kebab_case(), css_value)
             })
             .collect::<String>();
 
-        println!("{props:#?}");
-
-
-        Style::create("happiness", &*props).expect("could not parse string")
+        Sheet::from_str(&dbg!(props)).unwrap()
     }
 
     /// Gets the properties set in this sx
@@ -105,6 +116,12 @@ impl Index<&str> for Sx {
 
     fn index(&self, index: &str) -> &Self::Output {
         &self.props[index]
+    }
+}
+
+impl From<SxRef> for Classes {
+    fn from(value: SxRef) -> Self {
+        Classes::from(value.style)
     }
 }
 
@@ -287,6 +304,7 @@ macro_rules! sx_internal {
     ({ $($tt:tt)+ }) => {
         {
             use $crate::theme::sx::*;
+            use $crate::{sx, sx_internal};
 
             let mut sx: Sx = Sx::default();
             sx_internal!(@object sx () ($($tt)+) ($($tt)+));
@@ -302,8 +320,18 @@ macro_rules! sx_internal {
     ($expr:expr) => {
         SxValue::try_from($expr).expect("could not create sxvalue")
     };
+}
 
+/// A style ref can be used as a css class
+#[derive(Debug, Clone)]
+pub struct SxRef {
+    style: Style,
+}
 
+impl SxRef {
+    pub(crate) fn new(style: Style) -> Self {
+        Self { style }
+    }
 }
 
 #[cfg(test)]
@@ -334,7 +362,7 @@ mod tests {
             color: "background.body"
         };
 
-        let style = sx.to_style(&ThemeMode::default(), &theme);
+        let style = sx.to_css(&ThemeMode::default(), &theme);
         println!("style: {style:#?}");
     }
 }

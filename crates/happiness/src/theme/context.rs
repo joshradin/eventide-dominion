@@ -1,9 +1,18 @@
 //! Theme context
 
-use crate::theme::{Theme, ThemeMode};
 use std::ops::Deref;
+use std::rc::Rc;
+use stylist::css;
+
+use stylist::manager::StyleManager;
 use stylist::yew::styled_component;
-use yew::{function_component, hook, html, Children, Html, Properties, UseStateHandle};
+use yew::{
+    Children, function_component, html, Html, Properties, use_effect_with,
+    UseStateHandle,
+};
+use crate::sx;
+
+use crate::theme::{hooks, Theme, ThemeMode};
 
 /// The theme context
 #[derive(Debug, Clone)]
@@ -45,11 +54,23 @@ impl PartialEq for ThemeContext {
     }
 }
 
-/// Use a theme
-#[hook]
-pub fn use_theme() -> Theme {
-    let theme = yew::use_context::<Theme>();
-    theme.unwrap_or_else(Theme::default)
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct StyleManagerContext {
+    manager: Rc<StyleManager>,
+}
+
+impl StyleManagerContext {
+    pub fn new(manager: Rc<StyleManager>) -> Self {
+        Self { manager }
+    }
+}
+
+impl Deref for StyleManagerContext {
+    type Target = StyleManager;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.manager
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Properties)]
@@ -63,14 +84,35 @@ pub struct ThemeProviderProps {
 #[styled_component]
 pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
     let theme_state = ThemeContext::new(yew::use_state_eq(|| props.theme.clone()));
+    let manager = StyleManagerContext::new(yew::use_memo(theme_state.clone(), |_| {
+        StyleManager::builder()
+            .prefix(theme_state.prefix.clone().into())
+            .build()
+            .expect("could not create style manager")
+    }));
 
-    let theme = yew::use_memo(theme_state.clone(), |theme| {
-        
+    html! {
+            <yew::ContextProvider<ThemeContext> context={theme_state}>
+                <yew::ContextProvider<StyleManagerContext> context={manager}>
+                    {for props.children.iter()}
+                </yew::ContextProvider<StyleManagerContext>>
+            </yew::ContextProvider<ThemeContext>>
+    }
+}
+
+#[function_component]
+pub fn CssBaseline() -> Html {
+    let theme = hooks::use_theme();
+
+    use_effect_with(theme, |theme| {
+        theme.mount(
+            sx! {
+
+            }
+        )
     });
 
     html! {
-        <yew::ContextProvider<ThemeContext> context={theme_state}>
-            {for props.children.iter()}
-        </yew::ContextProvider<ThemeContext>>
+        <></>
     }
 }

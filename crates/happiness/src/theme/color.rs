@@ -22,7 +22,7 @@ pub enum Color {
     Hsla { h: u16, s: u8, l: u8, a: u8 },
     Var {
         name: String,
-        fallback: Option<Box<Color>>
+        fallback: Option<Box<Color>>,
     },
 }
 
@@ -100,17 +100,14 @@ impl Display for Color {
             Color::Hsla { h, s, l, a } => {
                 write!(f, "hsla({h}, {s}, {l}, {a})")
             }
-            Color::Var { name, fallback } => {
-                match fallback {
-                    None => {
-                        write!(f, "var({name})")
-                    }
-                    Some(fallback) => {
-                        write!(f, "var({name}, {fallback})")
-                    }
+            Color::Var { name, fallback } => match fallback {
+                None => {
+                    write!(f, "var({name})")
                 }
-
-            }
+                Some(fallback) => {
+                    write!(f, "var({name}, {fallback})")
+                }
+            },
         }
     }
 }
