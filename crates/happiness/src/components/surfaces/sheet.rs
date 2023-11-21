@@ -1,6 +1,6 @@
-use yew::{Children, function_component, Html, html, Properties};
 use crate::theme::sx::Sx;
-use crate::{use_sx, sx, components::system::Box};
+use crate::{components::system::Box, sx, use_sx};
+use yew::{function_component, html, Children, Html, Properties};
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct SheetProps {
@@ -14,26 +14,24 @@ pub struct SheetProps {
     pub children: Children,
 }
 
-
 #[function_component]
 pub fn Sheet(props: &SheetProps) -> Html {
-    let sx = props.sx.clone().merge(sx!{
-        background: "background.body"
+    let sx = props.sx.clone().merge(sx! {
+        // background: "background.body"
     });
 
     html! {
-        <Box {sx}>
+        <Box {sx} class={yew::classes!("sheet")}>
             {for props.children.clone()}
         </Box>
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use yew::{html, ServerRenderer};
-    use yew::html::IntoPropValue;
     use super::*;
+    use yew::html::IntoPropValue;
+    use yew::{html, ServerRenderer};
 
     #[tokio::test]
     async fn render_sheet() {

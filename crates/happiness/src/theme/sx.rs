@@ -1,22 +1,26 @@
 //! Contains the definition of the `Sx` type and the `sx!` macro
 //!
 //!
-use cssparser::{CowRcStr, ToCss};
 use std::fmt::{Debug, Formatter};
 use std::ops::Index;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use cssparser::ToCss;
+use gloo::console::console_dbg;
+use gloo::history::query::FromQuery;
 use heck::{ToKebabCase, ToTrainCase};
 use indexmap::IndexMap;
-use stylist::ast::Sheet;
-use stylist::{Style, StyleSource};
+use stylist::ast::{Sheet, ToStyleStr};
+use stylist::Style;
 use yew::Classes;
 
 pub use crate::theme::sx;
+use crate::theme::sx::sx_to_css::sx_to_css;
 use crate::theme::sx::sx_value_parsing::{parse_sx_value, ParseSxValueError};
 use crate::theme::{Color, Theme, ThemeMode};
 
+mod sx_to_css;
 mod sx_value_parsing;
 
 /// Contains CSS definition with some customization
@@ -43,66 +47,8 @@ impl Sx {
     }
 
     pub fn to_css(self, mode: &ThemeMode, theme: &Theme) -> Sheet {
-        let props = self
-            .props
-            .into_iter()
-            .map(|(key, value)| {
-                (key, {
-                    let mut value = value;
-
-                    loop {
-                        match value {
-                            SxValue::Callback(cb) => value = cb.apply(theme),
-                            SxValue::ThemeToken {
-                                ref palette,
-                                ref selector,
-                            } => {
-                                let palette = theme.get_palette(palette).unwrap_or_else(|| {
-                                    panic!("no palette named {palette:?} found")
-                                });
-                                let color = palette.get(selector, mode).unwrap_or_else(|| {
-                                    panic!("Could not find selector {selector:?} in palette")
-                                });
-
-                                break SxValue::Color(color.clone());
-                            }
-                            other => break other,
-                        }
-                    }
-                })
-            })
-            .map(|(key, value)| {
-                let css_value = match value {
-                    SxValue::Integer(i) => {
-                        format!("{i}")
-                    }
-                    SxValue::Float(f) => {
-                        format!("{f}")
-                    }
-                    SxValue::Percent(p) => {
-                        format!("{}%", p * 100.0)
-                    }
-                    SxValue::FloatDimension { value, unit } => {
-                        format!("{value}{unit}")
-                    }
-                    SxValue::Dimension { value, unit } => {
-                        format!("{value}{unit}")
-                    }
-                    SxValue::CssLiteral(lit) => {
-                        format!("{lit}")
-                    }
-                    SxValue::String(s) => {
-                        format!("\"{s}\"")
-                    }
-                    SxValue::Color(c) => c.to_string(),
-                    _other => panic!("illegal SxValue at this point: {:?}", _other),
-                };
-
-                format!("{}: {};", key.to_kebab_case(), css_value)
-            })
-            .collect::<String>();
-
-        Sheet::from_str(&dbg!(props)).unwrap()
+        let css = sx_to_css(self, mode, theme, None).expect("invalid sx");
+        Sheet::from_str(&css).unwrap()
     }
 
     /// Gets the properties set in this sx
@@ -138,6 +84,37 @@ pub enum SxValue {
     Color(Color),
     ThemeToken { palette: String, selector: String },
     Callback(FnSxValue),
+    Nested(Sx),
+}
+
+impl SxValue {
+    pub fn to_css(self) -> Option<String> {
+        Some(match self {
+            SxValue::Integer(i) => {
+                format!("{i}")
+            }
+            SxValue::Float(f) => {
+                format!("{f}")
+            }
+            SxValue::Percent(p) => {
+                format!("{}%", p * 100.0)
+            }
+            SxValue::FloatDimension { value, unit } => {
+                format!("{value}{unit}")
+            }
+            SxValue::Dimension { value, unit } => {
+                format!("{value}{unit}")
+            }
+            SxValue::CssLiteral(lit) => {
+                format!("{lit}")
+            }
+            SxValue::String(s) => {
+                format!("\"{s}\"")
+            }
+            SxValue::Color(c) => c.to_string(),
+            _other => return None,
+        })
+    }
 }
 
 impl From<i32> for SxValue {
@@ -155,14 +132,20 @@ impl From<f32> for SxValue {
 impl From<&str> for SxValue {
     fn from(quoted_str: &str) -> Self {
         let split = quoted_str.split(".").collect::<Vec<_>>();
-        if split.len() == 2 {
-            let palette = split[0].to_string().trim().to_string();
-            let selector = split[1].to_string().trim().to_string();
+        if split.len() == 2 && !(split[0].trim().is_empty() || split[1].trim().is_empty()) {
+            let palette = split[0].trim().to_string();
+            let selector = split[1].trim().to_string();
 
             SxValue::ThemeToken { palette, selector }
         } else {
             quoted_str.parse().unwrap()
         }
+    }
+}
+
+impl From<Sx> for SxValue {
+    fn from(value: Sx) -> Self {
+        Self::Nested(value)
     }
 }
 

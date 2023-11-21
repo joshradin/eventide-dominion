@@ -34,7 +34,7 @@ impl Palette {
         self.selector_to_colors.keys().map(|s| &**s)
     }
 
-    pub fn get<Q: Eq + Hash>(&self, selector: &Q, mode: &ThemeMode) -> Option<&Color>
+    pub fn select<Q: Eq + Hash + ?Sized>(&self, selector: &Q, mode: &ThemeMode) -> Option<&Color>
     where
         String: Borrow<Q>,
     {

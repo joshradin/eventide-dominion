@@ -1,0 +1,14 @@
+{
+  "palettes": {
+    "common": {
+      "white": "#FFFFFF",
+      "black": "#000000"
+    },
+    "background": {
+      "body": {
+        "dark": "",
+        "light": ""
+      }
+    }
+  }
+}

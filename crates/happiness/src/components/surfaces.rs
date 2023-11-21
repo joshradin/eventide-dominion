@@ -1,5 +1,5 @@
 //! Surfaces provide work
 
-pub use self::{sheet::*, card::*};
-mod sheet;
+pub use self::{card::*, sheet::*};
 mod card;
+mod sheet;

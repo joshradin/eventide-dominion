@@ -1,6 +1,6 @@
-use yew::hook;
 use crate::theme::Theme;
 use crate::ThemeContext;
+use yew::hook;
 
 /// Use a theme
 #[hook]

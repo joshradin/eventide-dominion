@@ -4,10 +4,11 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 use dark_light::Mode;
+use gloo::utils::document;
 use yew::Properties;
 
+use crate::{Error, Sx};
 pub use color::Color;
-use crate::Sx;
 
 use crate::theme::palette::Palette;
 
@@ -17,6 +18,8 @@ pub mod context;
 pub mod hooks;
 pub mod palette;
 pub mod sx;
+pub mod baseline;
+pub mod serde;
 
 /// The theme kind
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -47,8 +50,7 @@ impl ThemeMode {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Theme {
-    prefix: String,
-    pub mode: ThemeMode,
+    pub prefix: String,
     palettes: HashMap<String, Palette>,
 }
 
@@ -73,8 +75,58 @@ impl Default for Theme {
                     fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
                 },
             );
+            background.insert_by_mode(
+                "body",
+                Color::Var {
+                    name: theme.var_name("common", "black"),
+                    fallback: Some(Box::new(Color::hex_code(0x000000))),
+                },
+                Color::Var {
+                    name: theme.var_name("common", "white"),
+                    fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
+                },
+            );
+            background.insert_by_mode(
+                "body",
+                Color::Var {
+                    name: theme.var_name("common", "black"),
+                    fallback: Some(Box::new(Color::hex_code(0x000000))),
+                },
+                Color::Var {
+                    name: theme.var_name("common", "white"),
+                    fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
+                },
+            );
+            background.insert_by_mode(
+                "body",
+                Color::Var {
+                    name: theme.var_name("common", "black"),
+                    fallback: Some(Box::new(Color::hex_code(0x000000))),
+                },
+                Color::Var {
+                    name: theme.var_name("common", "white"),
+                    fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
+                },
+            );
 
             theme.insert_palette("background", background);
+        }
+
+        {
+            let mut background = Palette::new();
+            background.insert_by_mode(
+                "primary",
+                Color::Var {
+                    name: theme.var_name("neutral", "10"),
+                    fallback: Some(Box::new(Color::hex_code(0xF0F4F8))),
+                },
+                Color::Var {
+                    name: theme.var_name("neutral", "80"),
+                    fallback: Some(Box::new(Color::hex_code(0x171A1C))),
+                },
+            );
+
+            theme.insert_palette("text", background);
         }
 
         theme
@@ -89,7 +141,6 @@ impl Theme {
     pub fn with_prefix(prefix: impl AsRef<str>) -> Self {
         Self {
             prefix: prefix.as_ref().to_string(),
-            mode: Default::default(),
             palettes: Default::default(),
         }
     }
@@ -121,10 +172,5 @@ impl Theme {
     /// Gets all palettes
     pub fn palettes(&self) -> impl Iterator<Item = (&str, &Palette)> {
         self.palettes.iter().map(|(key, value)| (&**key, value))
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    pub(crate) fn mount(&self, mount: Sx) -> Result<(), crate::Error> {
-        
     }
 }

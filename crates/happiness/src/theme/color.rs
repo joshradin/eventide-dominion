@@ -86,7 +86,7 @@ impl Display for Color {
                 write!(f, "{n}")
             }
             Color::Hex(hex) => {
-                write!(f, "#{hex:08X}")
+                write!(f, "#{hex:06X}")
             }
             Color::Rgb { r, g, b } => {
                 write!(f, "rgb({r}, {g}, {b})")

@@ -1,16 +1,19 @@
 //! Contains system components. Not meant for general use
 
+use crate::sx;
+use crate::theme::hooks::use_sx;
 use crate::theme::sx::Sx;
 use yew::html::Children;
-use crate::theme::hooks::use_sx;
-use yew::{function_component, Html, html, Properties};
-
-
+use yew::{classes, Classes, function_component, html, Html, Properties};
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct BoxProps {
     #[prop_or_default]
     pub sx: Sx,
+    #[prop_or_else(|| "div".to_string())]
+    pub component: String,
+    #[prop_or_else(|| classes!("box"))]
+    pub class: Classes,
     #[prop_or_default]
     pub children: Children,
 }
@@ -18,11 +21,13 @@ pub struct BoxProps {
 #[function_component]
 pub fn Box(props: &BoxProps) -> Html {
     let sx = use_sx(props.sx.clone());
+    let mut classes = classes!(sx);
+    classes.extend(props.class.clone());
 
     html! {
-        <div class={sx}>
+        <@{props.component.clone()} class={classes}>
             { for props.children.clone()}
-        </div>
+        </@>
     }
 }
 
