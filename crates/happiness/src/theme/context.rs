@@ -13,8 +13,8 @@ use stylist::manager::StyleManager;
 use stylist::yew::styled_component;
 use yew::{function_component, html, use_effect_with, Children, Html, Properties, UseStateHandle};
 
-use crate::theme::{hooks, Theme, ThemeMode};
 use crate::theme::baseline::baseline;
+use crate::theme::{hooks, Theme, ThemeMode};
 
 /// The theme context
 #[derive(Debug, Clone)]
@@ -130,10 +130,7 @@ pub fn CssBaseline() -> Html {
 
     use_effect_with(theme, move |theme| {
         style_manager
-            .mount(
-                theme,
-                baseline(),
-            )
+            .mount(theme, baseline(theme, &ThemeMode::System.detect()))
             .expect("could not mount sx");
     });
 

@@ -1,5 +1,6 @@
 //! Contains palette
 
+use indexmap::IndexMap;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -9,7 +10,7 @@ use crate::theme::{Color, ThemeMode};
 /// A palette contains an assortment of colors
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Palette {
-    selector_to_colors: HashMap<String, ColorByMode>,
+    selector_to_colors: IndexMap<String, ColorByMode>,
 }
 
 impl Palette {

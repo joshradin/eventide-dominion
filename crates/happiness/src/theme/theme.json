@@ -1,13 +1,65 @@
 {
   "palettes": {
     "common": {
-      "white": "#FFFFFF",
-      "black": "#000000"
+      "preset": {
+        "white": "#FFFFFF",
+        "black": "#000000"
+      }
     },
     "background": {
-      "body": {
-        "dark": "",
-        "light": ""
+      "preset": {
+        "body": {
+          "dark": {
+            "var": "common.black",
+            "fallback": "#000000"
+          },
+          "light": {
+            "var": "common.white",
+            "fallback": "#FFFFFF"
+          }
+        },
+        "level1": {
+          "dark": {
+            "var": "neutral.900"
+          },
+          "light": {
+            "var": "neutral.100"
+          }
+        },
+        "level2": {
+          "dark": {
+            "var": "neutral.800"
+          },
+          "light": {
+            "var": "neutral.200"
+          }
+        },
+        "level3": {
+          "dark": {
+            "var": "neutral.700"
+          },
+          "light": {
+            "var": "neutral.300"
+          }
+        }
+      }
+    },
+    "text": {
+      "preset": {
+        "primary": {
+          "dark": {
+            "var": "neutral.200"
+          },
+          "light": {
+            "var": "neutral.800"
+          }
+        }
+      }
+    },
+    "neutral": {
+      "range": {
+        "light": "#FBFCFE",
+        "dark": "#0B0D0E"
       }
     }
   }

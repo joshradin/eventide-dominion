@@ -1,8 +1,8 @@
 use wasm_bindgen_test::{console_log, wasm_bindgen_test};
 use yew::{function_component, html, Html, Renderer};
 
-use happiness::{CssBaseline, surfaces::Sheet, ThemeProvider, sx};
 use happiness::theme::Theme;
+use happiness::{surfaces::Sheet, sx, CssBaseline, ThemeProvider};
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 

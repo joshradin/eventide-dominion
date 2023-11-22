@@ -6,9 +6,9 @@ use std::io::Write;
 
 use heck::ToKebabCase;
 
-use crate::{Error, Sx};
-use crate::theme::{Theme, ThemeMode};
 use crate::theme::sx::SxValue;
+use crate::theme::{Theme, ThemeMode};
+use crate::{Error, Sx};
 
 /// Converts sx to css
 pub fn sx_to_css<'a>(
@@ -118,7 +118,8 @@ fn property_to_declaration<'a, 'b: 'a>(
 }
 
 fn to_property(key: &str) -> String {
-    key.split("-").map(ToKebabCase::to_kebab_case)
+    key.split("-")
+        .map(ToKebabCase::to_kebab_case)
         .collect::<Vec<String>>()
         .join("-")
 }

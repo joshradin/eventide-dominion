@@ -1,15 +1,23 @@
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while_m_n};
 use nom::combinator::{map_res, opt};
+use nom::error::Error;
 use nom::sequence::tuple;
-use nom::IResult;
+use nom::{ErrorConvert, Finish, IResult};
+use serde::de::Error as _;
+use serde::{Deserialize, Deserializer};
+use std::borrow::Cow;
+use std::char::ParseCharError;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+use thiserror::Error;
 
 /// Html compatible
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(untagged)]
 pub enum Color {
-    /// A named CSS color
-    Named(String),
+    /// CSS literal value
+    CSSLiteral(String),
     /// A hex color
     Hex(u32),
     /// Rgb color
@@ -21,16 +29,16 @@ pub enum Color {
     /// hsla color
     Hsla { h: u16, s: u8, l: u8, a: u8 },
     Var {
-        name: String,
+        var: String,
         fallback: Option<Box<Color>>,
     },
 }
 
 /// HSL are constrained to `[0, 1]`
-fn hsl_to_rgb(h: f64, s: f64, l: f64) -> [u8; 3] {
-    let mut r: f64 = 0.;
-    let mut g: f64 = 0.;
-    let mut b: f64 = 0.;
+pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
+    let mut r: f32 = 0.;
+    let mut g: f32 = 0.;
+    let mut b: f32 = 0.;
 
     if s == 0. {
         r = l;
@@ -49,7 +57,7 @@ fn hsl_to_rgb(h: f64, s: f64, l: f64) -> [u8; 3] {
         (b * 255.0).round() as u8,
     ]
 }
-fn hue_to_rgb(p: f64, q: f64, mut t: f64) -> f64 {
+fn hue_to_rgb(p: f32, q: f32, mut t: f32) -> f32 {
     if t < 0.0 {
         t = t + 1.;
     }
@@ -67,22 +75,140 @@ fn hue_to_rgb(p: f64, q: f64, mut t: f64) -> f64 {
     }
 }
 
+pub fn rgb_to_hsl(r: u8, g: u8, b: u8) -> [f32; 3] {
+    let r = r as f64 / 255.0;
+    let g = g as f64 / 255.0;
+    let b = b as f64 / 255.0;
+
+    let vmax = r.max(g).max(b);
+    let vmin = r.min(g).min(b);
+
+    let h: f64;
+    let s: f64;
+    let l: f64 = (vmax + vmin) / 2.0;
+    if vmax == vmin {
+        return [0., 0., l as f32];
+    }
+
+    let d = vmax - vmin;
+    s = if l > 0.5 {
+        d / (2.0 - vmax - vmin)
+    } else {
+        d / (vmax + vmin)
+    };
+    if vmax == r {
+        h = (g - b) / d + (if g < b { 6.0 } else { 0.0 });
+    } else if vmax == g {
+        h = (b - r) / d + 2.0;
+    } else {
+        h = (r - g) / d + 4.0;
+    }
+    let h = h / 6.0;
+
+    [h as f32, s as f32, l as f32]
+}
+
+enum Simple {
+    Rgba(u8, u8, u8, u8),
+    Hsla(f32, f32, f32, f32),
+}
+
 impl Color {
     /// Creates a new color with a name
     pub fn named<S: AsRef<str>>(name: S) -> Self {
-        Self::Named(name.as_ref().to_string())
+        Self::CSSLiteral(name.as_ref().to_string())
     }
 
     /// Creates a new color by hex
     pub fn hex_code(value: u32) -> Self {
         Self::Hex(value)
     }
+
+    /// Gets the color as an HSLA value, where each is a value \[0,1], if it
+    /// can be converted
+    pub fn to_hsla(&self) -> Result<[f32; 4], TransformColorError> {
+        let simple = self.to_simple()?;
+
+        match simple {
+            Simple::Rgba(r, g, b, a) => {
+                let [h, s, l] = rgb_to_hsl(r, g, b);
+                Ok([h, s, l, a as f32 / 255.0])
+            }
+            Simple::Hsla(h, s, l, a) => Ok([h, s, l, a]),
+        }
+    }
+
+    /// Gets the color as an RGBA value, where each is a value \[0,2566], if it
+    /// can be converted
+    pub fn to_rgba(&self) -> Result<[u8; 4], TransformColorError> {
+        let simple = self.to_simple()?;
+
+        match simple {
+            Simple::Rgba(r, g, b, a) => Ok([r, g, b, a]),
+            Simple::Hsla(h, s, l, a) => {
+                let [r, g, b] = hsl_to_rgb(h, s, l);
+                Ok([r, g, b, (a * 255.0) as u8])
+            }
+        }
+    }
+
+    fn to_simple(&self) -> Result<Simple, TransformColorError> {
+        let mut color: Cow<Color> = Cow::Borrowed(self);
+        if let Color::CSSLiteral(literal) = self {
+            *color.to_mut() = Color::from_str(literal)?;
+        }
+
+        let simple = match &*color {
+            &Color::Hex(hex) => {
+                let [r, g, b] = u32_to_rgb(hex);
+                Simple::Rgba(r, g, b, 0)
+            }
+            &Color::Rgb { r, g, b } => Simple::Rgba(r, g, b, 0),
+            &Color::Rgba { r, g, b, a } => Simple::Rgba(r, g, b, a),
+            &Color::Hsl { h, s, l } => {
+                Simple::Hsla(h as f32 / 360.0, s as f32 / 100.0, l as f32 / 100.0, 0.0)
+            }
+            &Color::Hsla { h, s, l, a } => Simple::Hsla(
+                h as f32 / 360.0,
+                s as f32 / 100.0,
+                l as f32 / 100.0,
+                a as f32 / 100.0,
+            ),
+            color => return Err(TransformColorError::NonEligibleColor(color.clone())),
+        };
+        Ok(simple)
+    }
+}
+
+/// An error occurred trying to convert HSLA
+#[derive(Debug, Error)]
+pub enum TransformColorError {
+    #[error("{0:?} can not be converted because it's non-eligible")]
+    NonEligibleColor(Color),
+    #[error(transparent)]
+    ParseError(#[from] ParseColorError),
+}
+
+impl FromStr for Color {
+    type Err = ParseColorError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse_color(s).finish().map(|ok| ok.1).map_err(|e| {
+            let Error { input, code } = e;
+
+            Error {
+                input: input.to_string(),
+                code,
+            }
+            .into()
+        })
+    }
 }
 
 impl Display for Color {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Color::Named(n) => {
+            Color::CSSLiteral(n) => {
                 write!(f, "{n}")
             }
             Color::Hex(hex) => {
@@ -100,7 +226,10 @@ impl Display for Color {
             Color::Hsla { h, s, l, a } => {
                 write!(f, "hsla({h}, {s}, {l}, {a})")
             }
-            Color::Var { name, fallback } => match fallback {
+            Color::Var {
+                var: name,
+                fallback,
+            } => match fallback {
                 None => {
                     write!(f, "var({name})")
                 }
@@ -138,9 +267,23 @@ fn parse_hex_color(color: &str) -> IResult<&str, Color> {
     ))
 }
 
+fn u32_to_rgb(value: u32) -> [u8; 3] {
+    let r = (value >> 16) & 0xFF;
+    let g = (value >> 8) & 0xFF;
+    let b = value & 0xFF;
+    [r as u8, g as u8, b as u8]
+}
+
+/// An error occurred while trying to parse a color
+#[derive(Debug, thiserror::Error)]
+pub enum ParseColorError {
+    #[error(transparent)]
+    NomError(#[from] nom::error::Error<String>),
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::theme::color::{hsl_to_rgb, parse_color};
+    use crate::theme::color::{hsl_to_rgb, parse_color, rgb_to_hsl};
     use nom::Finish;
 
     #[test]
@@ -164,5 +307,25 @@ mod tests {
         assert_eq!(r, 117);
         assert_eq!(g, 204);
         assert_eq!(b, 126);
+    }
+
+    #[test]
+    fn rgb_to_hsl_correctness() {
+        const CORRECTNESS: f32 = 0.001;
+        let (r, g, b) = (11, 13, 14);
+        let [h, s, l] = rgb_to_hsl(r, g, b);
+
+        assert!(
+            h - 200. / 360. < CORRECTNESS,
+            "error on h ({h}) is >= {CORRECTNESS}. Expected is ~200 deg"
+        );
+        assert!(
+            s - 0.12 < CORRECTNESS,
+            "error on s ({s}) is >= {CORRECTNESS}. Expected is ~0.12"
+        );
+        assert!(
+            l - 0.05 < CORRECTNESS,
+            "error on l ({l}) is >= {CORRECTNESS}. Expected is ~0.05"
+        );
     }
 }

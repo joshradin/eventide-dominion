@@ -4,7 +4,7 @@ use crate::sx;
 use crate::theme::hooks::use_sx;
 use crate::theme::sx::Sx;
 use yew::html::Children;
-use yew::{classes, Classes, function_component, html, Html, Properties};
+use yew::{classes, function_component, html, Classes, Html, Properties};
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct BoxProps {

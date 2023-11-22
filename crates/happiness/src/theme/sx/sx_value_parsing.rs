@@ -35,7 +35,7 @@ fn parse(parser: &mut Parser) -> Result<SxValue> {
             if let Some((color, ..)) =
                 cssparser::color::all_named_colors().find(|(color, ..)| *color == &**ident)
             {
-                SxValue::Color(Color::Named(color.to_string()))
+                SxValue::Color(Color::CSSLiteral(color.to_string()))
             } else {
                 SxValue::CssLiteral(ident.to_string())
             }
@@ -154,7 +154,7 @@ mod tests {
         let SxValue::Color(color) = &value else {
             panic!("wrong sx value kind: {value:#?}");
         };
-        let SxValue::Color(Color::Named(color)) = value else {
+        let SxValue::Color(Color::CSSLiteral(color)) = value else {
             panic!("should be a color")
         };
         assert_eq!(color, "red");

@@ -5,21 +5,22 @@ use std::ops::Deref;
 
 use dark_light::Mode;
 use gloo::utils::document;
+use once_cell::sync::Lazy;
 use yew::Properties;
 
-use crate::{Error, Sx};
+use crate::{theme, Error, Sx};
 pub use color::Color;
 
 use crate::theme::palette::Palette;
 
 mod color;
 
+pub mod baseline;
 pub mod context;
 pub mod hooks;
 pub mod palette;
-pub mod sx;
-pub mod baseline;
 pub mod serde;
+pub mod sx;
 
 /// The theme kind
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -54,82 +55,13 @@ pub struct Theme {
     palettes: HashMap<String, Palette>,
 }
 
+static DEFAULT_THEME: Lazy<Theme> = Lazy::new(|| {
+    serde::from_str(include_str!("./theme/theme.json")).expect("could not read default theme")
+});
+
 impl Default for Theme {
     fn default() -> Self {
-        let mut theme = Theme::new();
-
-        let mut common = theme.palette("common");
-        common.insert_constant("white", Color::hex_code(0xFFFFFF));
-        common.insert_constant("black", Color::hex_code(0x000000));
-
-        {
-            let mut background = Palette::new();
-            background.insert_by_mode(
-                "body",
-                Color::Var {
-                    name: theme.var_name("common", "black"),
-                    fallback: Some(Box::new(Color::hex_code(0x000000))),
-                },
-                Color::Var {
-                    name: theme.var_name("common", "white"),
-                    fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
-                },
-            );
-            background.insert_by_mode(
-                "body",
-                Color::Var {
-                    name: theme.var_name("common", "black"),
-                    fallback: Some(Box::new(Color::hex_code(0x000000))),
-                },
-                Color::Var {
-                    name: theme.var_name("common", "white"),
-                    fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
-                },
-            );
-            background.insert_by_mode(
-                "body",
-                Color::Var {
-                    name: theme.var_name("common", "black"),
-                    fallback: Some(Box::new(Color::hex_code(0x000000))),
-                },
-                Color::Var {
-                    name: theme.var_name("common", "white"),
-                    fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
-                },
-            );
-            background.insert_by_mode(
-                "body",
-                Color::Var {
-                    name: theme.var_name("common", "black"),
-                    fallback: Some(Box::new(Color::hex_code(0x000000))),
-                },
-                Color::Var {
-                    name: theme.var_name("common", "white"),
-                    fallback: Some(Box::new(Color::hex_code(0xFFFFFF))),
-                },
-            );
-
-            theme.insert_palette("background", background);
-        }
-
-        {
-            let mut background = Palette::new();
-            background.insert_by_mode(
-                "primary",
-                Color::Var {
-                    name: theme.var_name("neutral", "10"),
-                    fallback: Some(Box::new(Color::hex_code(0xF0F4F8))),
-                },
-                Color::Var {
-                    name: theme.var_name("neutral", "80"),
-                    fallback: Some(Box::new(Color::hex_code(0x171A1C))),
-                },
-            );
-
-            theme.insert_palette("text", background);
-        }
-
-        theme
+        DEFAULT_THEME.clone()
     }
 }
 

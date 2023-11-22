@@ -11,6 +11,7 @@ use gloo::console::console_dbg;
 use gloo::history::query::FromQuery;
 use heck::{ToKebabCase, ToTrainCase};
 use indexmap::IndexMap;
+use indexmap::map::Entry;
 use stylist::ast::{Sheet, ToStyleStr};
 use stylist::Style;
 use yew::Classes;
@@ -40,7 +41,18 @@ impl Sx {
         let mut sx = self;
 
         for (prop, value) in other.props {
-            sx.props.entry(prop).or_insert(value);
+            match sx.props.entry(prop) {
+                Entry::Occupied(mut occ) => {
+                    if let SxValue::Nested(old_sx) = occ.get_mut() {
+                        if let SxValue::Nested(sx) = value {
+                            *old_sx = old_sx.clone().merge(sx);
+                        }
+                    }
+                }
+                Entry::Vacant(v) => {
+                    v.insert(value);
+                }
+            }
         }
 
         sx
