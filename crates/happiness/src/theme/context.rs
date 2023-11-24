@@ -1,6 +1,6 @@
 //! Theme context
 
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
 use cfg_if::cfg_if;
@@ -9,7 +9,9 @@ use gloo::utils::document;
 use stylist::ast::ToStyleStr;
 use stylist::manager::StyleManager;
 use stylist::yew::styled_component;
-use yew::{function_component, html, use_effect_with, Children, Html, Properties, UseStateHandle};
+use wasm_bindgen::JsCast;
+use web_sys::{HtmlStyleElement, Node};
+use yew::{function_component, html, use_effect_with, Children, Html, Properties, UseStateHandle, use_state_eq};
 
 use crate::theme::baseline::baseline;
 use crate::theme::theme_mode::ThemeMode;
@@ -72,12 +74,31 @@ impl StyleManagerContext {
         (|| {
             let css = to_mount.to_css(&mode, theme);
             let style_element = document.create_element("style")?;
-            style_element.set_attribute("data-style", &format!("theme-{}-main", theme.prefix))?;
+            let theme_name = format!("theme-{}-main", theme.prefix);
+            style_element.set_attribute("data-style", &theme_name)?;
             style_element.set_text_content(Some(&css.to_style_str(None)));
 
+            let list = container.child_nodes();
+            let len = list.length();
+            let mut existing: Option<Node> = None;
+            for i in 0..len {
+                if let Some(child) = list.get(i) {
+                    if let Some(style_element) = child.dyn_ref::<HtmlStyleElement>() {
+                        if style_element.get_attribute("data-style").as_ref() == Some(&theme_name) {
+                            existing = Some(child);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if let Some(ref existing) = existing {
+                container.replace_child(&style_element, existing)?;
+            } else {
+                container.append_child(&style_element)?;
+            }
 
 
-            container.append_child(&style_element)?;
             Ok(())
         })()
         .map_err(|e| Error::Web(Some(e)))
@@ -101,6 +122,33 @@ impl Deref for StyleManagerContext {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct ThemeModeContext {
+    ctx: UseStateHandle<ThemeMode>
+}
+
+impl ThemeModeContext {
+    pub fn new(ctx: UseStateHandle<ThemeMode>) -> Self {
+        Self { ctx }
+    }
+}
+
+
+impl Deref for ThemeModeContext {
+    type Target = UseStateHandle<ThemeMode>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.ctx
+    }
+}
+
+impl DerefMut for ThemeModeContext {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.ctx
+    }
+}
+
+
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct ThemeProviderProps {
     #[prop_or_default]
@@ -118,12 +166,16 @@ pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
             .build()
             .expect("could not create style manager")
     }));
+    let mode = ThemeModeContext::new(use_state_eq(|| ThemeMode::System.detect()));
+
 
     html! {
             <yew::ContextProvider<ThemeContext> context={theme_state}>
-                <yew::ContextProvider<StyleManagerContext> context={manager}>
-                    {for props.children.iter()}
-                </yew::ContextProvider<StyleManagerContext>>
+                <yew::ContextProvider<ThemeModeContext> context={mode}>
+                    <yew::ContextProvider<StyleManagerContext> context={manager}>
+                        {for props.children.iter()}
+                    </yew::ContextProvider<StyleManagerContext>>
+                </yew::ContextProvider<ThemeModeContext>>
             </yew::ContextProvider<ThemeContext>>
     }
 }
@@ -132,7 +184,7 @@ pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
 pub fn CssBaseline() -> Html {
     let theme = hooks::use_theme();
     let style_manager: StyleManagerContext = hooks::use_style_manager();
-    let mode = ThemeMode::Light;
+    let (mode, ..) = hooks::use_mode();
 
     use_effect_with((theme, mode), move |(theme, mode)| {
         info!(format!("mounting {:#?}", theme));
