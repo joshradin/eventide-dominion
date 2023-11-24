@@ -2,10 +2,10 @@
 
 use indexmap::IndexMap;
 use std::borrow::Borrow;
-use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::theme::{Color, ThemeMode};
+use crate::theme::theme_mode::ThemeMode;
+use crate::theme::Color;
 
 /// A palette contains an assortment of colors
 #[derive(Debug, Clone, PartialEq, Default)]

@@ -1,20 +1,20 @@
 //! Theme context
 
-use cfg_if::cfg_if;
-use gloo::console::console_dbg;
-use gloo::utils::document;
 use std::ops::Deref;
 use std::rc::Rc;
-use stylist::ast::ToStyleStr;
-use stylist::css;
 
-use crate::{sx, Error, Sx};
+use cfg_if::cfg_if;
+use gloo::console::{console, console_dbg, info};
+use gloo::utils::document;
+use stylist::ast::ToStyleStr;
 use stylist::manager::StyleManager;
 use stylist::yew::styled_component;
 use yew::{function_component, html, use_effect_with, Children, Html, Properties, UseStateHandle};
 
 use crate::theme::baseline::baseline;
-use crate::theme::{hooks, Theme, ThemeMode};
+use crate::theme::theme_mode::ThemeMode;
+use crate::theme::{hooks, Theme};
+use crate::{Error, Sx};
 
 /// The theme context
 #[derive(Debug, Clone)]
@@ -60,27 +60,32 @@ impl StyleManagerContext {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub(crate) fn mount_wasm(&self, theme: &Theme, to_mount: Sx) -> Result<(), crate::Error> {
+    pub(crate) fn mount_wasm(
+        &self,
+        theme: &Theme,
+        mode: &ThemeMode,
+        to_mount: Sx,
+    ) -> Result<(), crate::Error> {
         let document = document();
         let container = self.container().ok_or(Error::Web(None))?;
 
         (|| {
-            let css = to_mount.to_css(&ThemeMode::System, theme);
+            let css = to_mount.to_css(&mode, theme);
             let style_element = document.create_element("style")?;
             style_element.set_attribute("data-style", &format!("theme-{}-main", theme.prefix))?;
             style_element.set_text_content(Some(&css.to_style_str(None)));
 
-            console_dbg!("creating style element: {:#?}", style_element);
+
 
             container.append_child(&style_element)?;
             Ok(())
         })()
         .map_err(|e| Error::Web(Some(e)))
     }
-    pub fn mount(&self, theme: &Theme, to_mount: Sx) -> Result<(), crate::Error> {
+    pub fn mount(&self, theme: &Theme, mode: &ThemeMode, to_mount: Sx) -> Result<(), crate::Error> {
         cfg_if! {
             if #[cfg(target_arch="wasm32")] {
-                self.mount_wasm(theme, to_mount)
+                self.mount_wasm(theme, mode, to_mount)
             } else {
                 Err(Error::MountingUnsupported)
             }
@@ -126,11 +131,13 @@ pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
 #[function_component]
 pub fn CssBaseline() -> Html {
     let theme = hooks::use_theme();
-    let style_manager = hooks::use_style_manager();
+    let style_manager: StyleManagerContext = hooks::use_style_manager();
+    let mode = ThemeMode::Light;
 
-    use_effect_with(theme, move |theme| {
+    use_effect_with((theme, mode), move |(theme, mode)| {
+        info!(format!("mounting {:#?}", theme));
         style_manager
-            .mount(theme, baseline(theme, &ThemeMode::System.detect()))
+            .mount(theme, &mode, baseline(theme, &mode))
             .expect("could not mount sx");
     });
 

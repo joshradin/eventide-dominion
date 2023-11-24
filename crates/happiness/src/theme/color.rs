@@ -5,15 +5,14 @@ use nom::error::Error;
 use nom::sequence::tuple;
 use nom::{ErrorConvert, Finish, IResult};
 use serde::de::Error as _;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::borrow::Cow;
-use std::char::ParseCharError;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use thiserror::Error;
 
 /// Html compatible
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Hash, Eq, Serialize)]
 #[serde(untagged)]
 pub enum Color {
     /// CSS literal value
@@ -40,7 +39,7 @@ pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
     let mut g: f32 = 0.;
     let mut b: f32 = 0.;
 
-    if s == 0. {
+    if s == 0.0 {
         r = l;
         g = l;
         b = l;
@@ -57,6 +56,7 @@ pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
         (b * 255.0).round() as u8,
     ]
 }
+
 fn hue_to_rgb(p: f32, q: f32, mut t: f32) -> f32 {
     if t < 0.0 {
         t = t + 1.;
@@ -108,7 +108,8 @@ pub fn rgb_to_hsl(r: u8, g: u8, b: u8) -> [f32; 3] {
     [h as f32, s as f32, l as f32]
 }
 
-enum Simple {
+#[derive(Debug)]
+pub(super) enum SimpleColor {
     Rgba(u8, u8, u8, u8),
     Hsla(f32, f32, f32, f32),
 }
@@ -124,35 +125,62 @@ impl Color {
         Self::Hex(value)
     }
 
+    pub fn rgb(r: u8, g: u8, b: u8) -> Self {
+        Self::Rgb { r, g, b }
+    }
+
+    pub fn hsl(h: u16, s: u8, l: u8) -> Self {
+        Self::Hsl { h, s, l }
+    }
+
     /// Gets the color as an HSLA value, where each is a value \[0,1], if it
     /// can be converted
     pub fn to_hsla(&self) -> Result<[f32; 4], TransformColorError> {
         let simple = self.to_simple()?;
 
         match simple {
-            Simple::Rgba(r, g, b, a) => {
+            SimpleColor::Rgba(r, g, b, a) => {
                 let [h, s, l] = rgb_to_hsl(r, g, b);
                 Ok([h, s, l, a as f32 / 255.0])
             }
-            Simple::Hsla(h, s, l, a) => Ok([h, s, l, a]),
+            SimpleColor::Hsla(h, s, l, a) => Ok([h, s, l, a]),
         }
     }
 
-    /// Gets the color as an RGBA value, where each is a value \[0,2566], if it
+    /// Gets the color as an HSLA value, where each is a value \[0,1], if it
+    /// can be converted
+    pub fn to_hsla_color(&self) -> Result<Color, TransformColorError> {
+        let [h, s, l, a] = self.to_hsla()?;
+        Ok(Self::Hsla {
+            h: (h * 360.0).round() as u16,
+            s: (s * 100.0).round() as u8,
+            l: (l * 100.0).round() as u8,
+            a: (a * 100.0).round() as u8,
+        })
+    }
+
+    /// Gets the color as an RGBA value, where each is a value \[0,256], if it
     /// can be converted
     pub fn to_rgba(&self) -> Result<[u8; 4], TransformColorError> {
         let simple = self.to_simple()?;
 
         match simple {
-            Simple::Rgba(r, g, b, a) => Ok([r, g, b, a]),
-            Simple::Hsla(h, s, l, a) => {
+            SimpleColor::Rgba(r, g, b, a) => Ok([r, g, b, a]),
+            SimpleColor::Hsla(h, s, l, a) => {
                 let [r, g, b] = hsl_to_rgb(h, s, l);
                 Ok([r, g, b, (a * 255.0) as u8])
             }
         }
     }
 
-    fn to_simple(&self) -> Result<Simple, TransformColorError> {
+    /// Gets the color as an HSLA value, where each is a value \[0,1], if it
+    /// can be converted
+    pub fn to_rgba_color(&self) -> Result<Color, TransformColorError> {
+        let [r, g, b, a] = self.to_rgba()?;
+        Ok(Self::Rgba { r, g, b, a })
+    }
+
+    pub(super) fn to_simple(&self) -> Result<SimpleColor, TransformColorError> {
         let mut color: Cow<Color> = Cow::Borrowed(self);
         if let Color::CSSLiteral(literal) = self {
             *color.to_mut() = Color::from_str(literal)?;
@@ -161,14 +189,14 @@ impl Color {
         let simple = match &*color {
             &Color::Hex(hex) => {
                 let [r, g, b] = u32_to_rgb(hex);
-                Simple::Rgba(r, g, b, 0)
+                SimpleColor::Rgba(r, g, b, 0)
             }
-            &Color::Rgb { r, g, b } => Simple::Rgba(r, g, b, 0),
-            &Color::Rgba { r, g, b, a } => Simple::Rgba(r, g, b, a),
+            &Color::Rgb { r, g, b } => SimpleColor::Rgba(r, g, b, 255),
+            &Color::Rgba { r, g, b, a } => SimpleColor::Rgba(r, g, b, a),
             &Color::Hsl { h, s, l } => {
-                Simple::Hsla(h as f32 / 360.0, s as f32 / 100.0, l as f32 / 100.0, 0.0)
+                SimpleColor::Hsla(h as f32 / 360.0, s as f32 / 100.0, l as f32 / 100.0, 1.0)
             }
-            &Color::Hsla { h, s, l, a } => Simple::Hsla(
+            &Color::Hsla { h, s, l, a } => SimpleColor::Hsla(
                 h as f32 / 360.0,
                 s as f32 / 100.0,
                 l as f32 / 100.0,
@@ -214,17 +242,17 @@ impl Display for Color {
             Color::Hex(hex) => {
                 write!(f, "#{hex:06X}")
             }
-            Color::Rgb { r, g, b } => {
-                write!(f, "rgb({r}, {g}, {b})")
+            Color::Rgb { r, g, b } | Color::Rgba { r, g, b, a: 255 } => {
+                write!(f, "#{r:02X}{g:02X}{b:02X}")
             }
             Color::Rgba { r, g, b, a } => {
-                write!(f, "rgba({r}, {g}, {b}, {a})")
+                write!(f, "#{r:02X}{g:02X}{b:02X}{a:02X}")
             }
-            Color::Hsl { h, s, l } => {
-                write!(f, "hsla({h}, {s}, {l})")
+            Color::Hsl { h, s, l } | Color::Hsla { h, s, l, a: 100 } => {
+                write!(f, "hsla({h}, {s}%, {l}%)")
             }
             Color::Hsla { h, s, l, a } => {
-                write!(f, "hsla({h}, {s}, {l}, {a})")
+                write!(f, "hsla({h}, {s}%, {l}%, {:1.2})", *a as f32 / 100.0)
             }
             Color::Var {
                 var: name,
@@ -244,15 +272,19 @@ impl Display for Color {
 pub fn parse_color(color: &str) -> IResult<&str, Color> {
     alt((parse_hex_color,))(color)
 }
+
 fn is_hex_digit(c: char) -> bool {
     c.is_digit(16)
 }
+
 fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
     u8::from_str_radix(input, 16)
 }
+
 fn hex_primary(input: &str) -> IResult<&str, u8> {
     map_res(take_while_m_n(2, 2, is_hex_digit), from_hex)(input)
 }
+
 fn parse_hex_color(color: &str) -> IResult<&str, Color> {
     let (rest, _) = tag("#")(color)?;
     let (rest, (r, g, b, a)) =
@@ -283,8 +315,12 @@ pub enum ParseColorError {
 
 #[cfg(test)]
 mod tests {
-    use crate::theme::color::{hsl_to_rgb, parse_color, rgb_to_hsl};
+    use crate::theme::Color;
     use nom::Finish;
+
+    use crate::theme::color::{hsl_to_rgb, parse_color, rgb_to_hsl};
+    use crate::theme::gradient::Gradient;
+    use crate::utils::bounded_float::BoundedFloat;
 
     #[test]
     fn parse_hex_color() {

@@ -7,11 +7,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use cssparser::ToCss;
-use gloo::console::console_dbg;
 use gloo::history::query::FromQuery;
 use heck::{ToKebabCase, ToTrainCase};
-use indexmap::IndexMap;
 use indexmap::map::Entry;
+use indexmap::IndexMap;
 use stylist::ast::{Sheet, ToStyleStr};
 use stylist::Style;
 use yew::Classes;
@@ -19,7 +18,8 @@ use yew::Classes;
 pub use crate::theme::sx;
 use crate::theme::sx::sx_to_css::sx_to_css;
 use crate::theme::sx::sx_value_parsing::{parse_sx_value, ParseSxValueError};
-use crate::theme::{Color, Theme, ThemeMode};
+use crate::theme::theme_mode::ThemeMode;
+use crate::theme::{Color, Theme};
 
 mod sx_to_css;
 mod sx_value_parsing;
@@ -89,17 +89,39 @@ pub enum SxValue {
     Integer(i32),
     Float(f32),
     Percent(f32),
-    FloatDimension { value: f32, unit: String },
-    Dimension { value: i32, unit: String },
+    FloatDimension {
+        value: f32,
+        unit: String,
+    },
+    Dimension {
+        value: i32,
+        unit: String,
+    },
     CssLiteral(String),
     String(String),
     Color(Color),
-    ThemeToken { palette: String, selector: String },
+    ThemeToken {
+        palette: String,
+        selector: String,
+    },
+    ClassVar {
+        class: String,
+        var: String,
+        fallback: Option<Box<SxValue>>,
+    },
     Callback(FnSxValue),
     Nested(Sx),
 }
 
 impl SxValue {
+    pub fn var(class: &str, var: &str, fallback: impl Into<Option<SxValue>>) -> Self {
+        Self::ClassVar {
+            class: class.to_string(),
+            var: var.to_string(),
+            fallback: fallback.into().map(|fallback| Box::new(fallback)),
+        }
+    }
+
     pub fn to_css(self) -> Option<String> {
         Some(match self {
             SxValue::Integer(i) => {

@@ -13,11 +13,13 @@ fn App() -> Html {
     html! {
        <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Sheet>
+            <Sheet sx={sx!{
+            "padding": "15px"
+        }}>
                 <Sheet
                     sx={sx!{
                         "backgroundColor": "common.white",
-                        "margin": "10px"
+                        "padding": "10px"
                     }}
                 >
                 {"Hello, World!"}

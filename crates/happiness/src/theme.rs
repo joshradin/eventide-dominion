@@ -3,51 +3,23 @@
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use dark_light::Mode;
-use gloo::utils::document;
 use once_cell::sync::Lazy;
 use yew::Properties;
 
-use crate::{theme, Error, Sx};
 pub use color::Color;
 
 use crate::theme::palette::Palette;
 
-mod color;
+pub mod color;
 
 pub mod baseline;
 pub mod context;
+pub mod gradient;
 pub mod hooks;
 pub mod palette;
 pub mod serde;
 pub mod sx;
-
-/// The theme kind
-#[derive(Debug, Clone, PartialEq, Default)]
-pub enum ThemeMode {
-    /// Dark mode
-    Dark,
-    /// Light mode
-    Light,
-    /// Follow the system
-    #[default]
-    System,
-}
-
-impl ThemeMode {
-    /// Detects system mode if possible, but only has effect if
-    /// the mode is System
-    pub fn detect(self) -> ThemeMode {
-        match self {
-            ThemeMode::System => match dark_light::detect() {
-                Mode::Dark => ThemeMode::Dark,
-                Mode::Light => ThemeMode::Light,
-                Mode::Default => ThemeMode::Light,
-            },
-            other => other,
-        }
-    }
-}
+pub mod theme_mode;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Theme {
@@ -97,8 +69,12 @@ impl Theme {
         self.palettes.entry(name.as_ref().to_string()).or_default()
     }
 
-    pub fn var_name(&self, palette: &str, selector: &str) -> String {
+    pub fn palette_var(&self, palette: &str, selector: &str) -> String {
         format!("--{}-palette-{palette}-{selector}", self.prefix)
+    }
+
+    pub fn class_var(&self, class: &str, var_name: &str) -> String {
+        format!("--{}-{class}-{var_name}", self.prefix)
     }
 
     /// Gets all palettes

@@ -7,7 +7,8 @@ use std::io::Write;
 use heck::ToKebabCase;
 
 use crate::theme::sx::SxValue;
-use crate::theme::{Theme, ThemeMode};
+use crate::theme::theme_mode::ThemeMode;
+use crate::theme::Theme;
 use crate::{Error, Sx};
 
 /// Converts sx to css
@@ -87,6 +88,20 @@ fn property_to_declaration<'a, 'b: 'a>(
                     .unwrap_or_else(|| panic!("Could not find selector {selector:?} in palette"));
 
                 break SxValue::Color(color.clone());
+            }
+            SxValue::ClassVar {
+                class,
+                var,
+                fallback,
+            } => {
+                break SxValue::CssLiteral(match fallback {
+                    None => format!("var({})", theme.class_var(class, var)),
+                    Some(fallback) => format!(
+                        "var({}, {})",
+                        theme.class_var(class, var),
+                        fallback.clone().to_css().expect("fallback be direct css")
+                    ),
+                })
             }
             other => break other.clone(),
         }

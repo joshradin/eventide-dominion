@@ -3,7 +3,8 @@ use yew::{hook, use_memo};
 
 use crate::theme::hooks::{use_style_manager, use_theme};
 use crate::theme::sx::{Sx, SxRef};
-use crate::theme::{Theme, ThemeMode};
+use crate::theme::theme_mode::ThemeMode;
+use crate::theme::Theme;
 
 #[hook]
 pub fn use_sx<Source>(source: Source) -> SxRef

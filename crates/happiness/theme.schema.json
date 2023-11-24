@@ -32,7 +32,7 @@
           "type": "object",
           "description": "Predetermined selectors",
           "properties": {
-            "preset": {
+            "solid": {
               "type": "object",
               "patternProperties": {
                 "\\w+": {
@@ -46,20 +46,32 @@
         },
         {
           "type": "object",
-          "description": "provide a minimum and maximum range. Auto split into 9 parts. Min is by default minimum darkness and max is by default maximum darkness",
+          "description": "provide a gradient",
           "properties": {
-            "range": {
+            "gradient": {
               "type": "object",
               "properties": {
-                "min": { "$ref": "#/$defs/color" },
-                "max": { "$ref": "#/$defs/color" }
-              }
-            },
-            "min": { "$ref": "#/$defs/color" },
-            "max": { "$ref": "#/$defs/color" }
+                "points": {
+                  "type": "object",
+                  "patternProperties": {
+                    "((0)?\\.\\d+)|(1\\.0)": {
+                      "$ref": "#/$defs/color"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "requiredProperties": ["0", "1"]
+                },
+                "mode": {
+                  "enum": ["hsl", "rgb"],
+                  "description": "If set, converts all specified points into the given color mode before creating the gradient. This can create different results."
+                }
+              },
+              "additionalProperties": false,
+              "requiredProperties": ["points"]
+            }
           },
           "additionalProperties": false,
-          "requiredProperties": ["range"]
+          "requiredProperties": ["gradient"]
         }
       ]
     },
