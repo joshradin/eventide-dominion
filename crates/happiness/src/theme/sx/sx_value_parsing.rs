@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use cssparser::{BasicParseError, BasicParseErrorKind, Parser, ParserInput, ToCss, Token};
 
-use crate::theme::sx::SxValue;
+use crate::theme::sx::sx_value::SxValue;
 use crate::theme::Color;
 
 type Result<T> = std::result::Result<T, ParseSxValueError>;
@@ -122,7 +122,7 @@ impl<'a> From<BasicParseError<'a>> for ParseSxValueError {
 #[cfg(test)]
 mod tests {
     use crate::theme::sx::sx_value_parsing::parse_sx_value;
-    use crate::theme::sx::SxValue;
+    use crate::theme::sx::sx_value::SxValue;
     use crate::theme::Color;
 
     #[test]

@@ -1,5 +1,5 @@
 use crate::theme::Theme;
-use crate::ThemeContext;
+use crate::theme::context::theme_context::ThemeContext;
 use yew::hook;
 
 /// Use a theme

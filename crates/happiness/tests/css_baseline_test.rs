@@ -1,3 +1,4 @@
+use log::info;
 use wasm_bindgen_test::{console_log, wasm_bindgen_test};
 use yew::{Callback, function_component, html, Html, Renderer, use_callback};
 
@@ -46,11 +47,15 @@ fn Main() -> Html {
 
     html! {
         <Sheet sx={sx!{
-                "padding": "15px"
+                "p": "15px",
+                "bgcolor": "background.level1",
+                "md": {
+                    "bgcolor": "blue"
+                },
                  }}>
                 <Sheet
                     sx={sx!{
-                        "backgroundColor": "common.white",
+                        "backgroundColor": "background.level2",
                         "padding": "10px"
                     }}
                 >
@@ -63,8 +68,7 @@ fn Main() -> Html {
 
 #[wasm_bindgen_test]
 async fn create_css() {
-    console_log!("starting test app");
-
+    wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));
+    info!("starting test");
     let handle = Renderer::<App>::new().render();
-    console_log!("handle: {:#?}", handle);
 }

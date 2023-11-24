@@ -1,12 +1,13 @@
 //! Used for theming
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
 
 use once_cell::sync::Lazy;
 use yew::Properties;
 
 pub use color::Color;
+use crate::theme::breakpoint::Breakpoints;
 
 use crate::theme::palette::Palette;
 
@@ -20,10 +21,12 @@ pub mod palette;
 pub mod serde;
 pub mod sx;
 pub mod theme_mode;
+pub mod breakpoint;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Theme {
     pub prefix: String,
+    breakpoints: Breakpoints,
     palettes: HashMap<String, Palette>,
 }
 
@@ -45,6 +48,7 @@ impl Theme {
     pub fn with_prefix(prefix: impl AsRef<str>) -> Self {
         Self {
             prefix: prefix.as_ref().to_string(),
+            breakpoints: Default::default(),
             palettes: Default::default(),
         }
     }
@@ -80,5 +84,15 @@ impl Theme {
     /// Gets all palettes
     pub fn palettes(&self) -> impl Iterator<Item = (&str, &Palette)> {
         self.palettes.iter().map(|(key, value)| (&**key, value))
+    }
+
+    /// Gets a reference to the breakpoints object
+    pub fn breakpoints(&self) -> &Breakpoints {
+        &self.breakpoints
+    }
+
+    /// Gets a mutable reference to the breakpoints object
+    pub fn breakpoints_mut(&mut self) -> &mut Breakpoints {
+        &mut self.breakpoints
     }
 }

@@ -1,6 +1,6 @@
 use yew::{Callback, hook, use_context};
 use crate::theme::theme_mode::ThemeMode;
-use crate::ThemeModeContext;
+use crate::theme::context::mode_context::ThemeModeContext;
 
 #[hook]
 pub fn use_mode() -> (ThemeMode, Callback<ThemeMode>) {

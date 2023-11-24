@@ -1,6 +1,6 @@
 use crate::theme::sx::Sx;
-use crate::theme::Theme;
-use crate::{components::system::Box, sx, use_sx};
+use crate::theme::{sx, Theme};
+use crate::{components::system::Box, sx, use_sx, theme::sx::SxValue};
 use yew::{function_component, html, Children, Html, Properties};
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
@@ -18,7 +18,7 @@ pub struct SheetProps {
 #[function_component]
 pub fn Sheet(props: &SheetProps) -> Html {
     let sx = props.sx.clone().merge(sx! {
-        background: SxValue::var("sheet", "background-color", None)
+        "bgcolor": SxValue::var("sheet", "background-color", None)
     });
 
     html! {

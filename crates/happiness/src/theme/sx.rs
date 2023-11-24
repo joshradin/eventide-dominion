@@ -1,14 +1,12 @@
 //! Contains the definition of the `Sx` type and the `sx!` macro
 //!
 //!
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::ops::Index;
 use std::str::FromStr;
-use std::sync::Arc;
-
 use cssparser::ToCss;
 use gloo::history::query::FromQuery;
-use heck::{ToKebabCase, ToTrainCase};
+use heck::{ToKebabCase, ToLowerCamelCase, ToTrainCase};
 use indexmap::map::Entry;
 use indexmap::IndexMap;
 use stylist::ast::{Sheet, ToStyleStr};
@@ -16,13 +14,15 @@ use stylist::Style;
 use yew::Classes;
 
 pub use crate::theme::sx;
-use crate::theme::sx::sx_to_css::sx_to_css;
-use crate::theme::sx::sx_value_parsing::{parse_sx_value, ParseSxValueError};
+use crate::theme::sx::sx_to_css::{sx_to_css, to_property};
 use crate::theme::theme_mode::ThemeMode;
-use crate::theme::{Color, Theme};
+use crate::theme::Theme;
 
 mod sx_to_css;
 mod sx_value_parsing;
+mod sx_value;
+pub use sx_value::*;
+use crate::system_props::{CssPropertyTranslator, SYSTEM_PROPERTIES};
 
 /// Contains CSS definition with some customization
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -33,7 +33,8 @@ pub struct Sx {
 impl Sx {
     /// Sets a css property
     pub fn insert<K: AsRef<str>, V: Into<SxValue>>(&mut self, key: K, value: V) {
-        self.props.insert(key.as_ref().to_string(), value.into());
+        let translated = SYSTEM_PROPERTIES.translate(key.as_ref()).to_string();
+        self.props.insert(to_property(translated), value.into());
     }
 
     /// Merges this Sx with another Sx. Uses the left's values for conflicting keys.
@@ -43,10 +44,13 @@ impl Sx {
         for (prop, value) in other.props {
             match sx.props.entry(prop) {
                 Entry::Occupied(mut occ) => {
-                    if let SxValue::Nested(old_sx) = occ.get_mut() {
-                        if let SxValue::Nested(sx) = value {
-                            *old_sx = old_sx.clone().merge(sx);
+                    match occ.get_mut() {
+                        SxValue::Nested(old_sx) => {
+                            if let SxValue::Nested(sx) = value {
+                                *old_sx = old_sx.clone().merge(sx);
+                            }
                         }
+                        _ => {}
                     }
                 }
                 Entry::Vacant(v) => {
@@ -80,149 +84,6 @@ impl Index<&str> for Sx {
 impl From<SxRef> for Classes {
     fn from(value: SxRef) -> Self {
         Classes::from(value.style)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-#[doc(hidden)]
-pub enum SxValue {
-    Integer(i32),
-    Float(f32),
-    Percent(f32),
-    FloatDimension {
-        value: f32,
-        unit: String,
-    },
-    Dimension {
-        value: i32,
-        unit: String,
-    },
-    CssLiteral(String),
-    String(String),
-    Color(Color),
-    ThemeToken {
-        palette: String,
-        selector: String,
-    },
-    ClassVar {
-        class: String,
-        var: String,
-        fallback: Option<Box<SxValue>>,
-    },
-    Callback(FnSxValue),
-    Nested(Sx),
-}
-
-impl SxValue {
-    pub fn var(class: &str, var: &str, fallback: impl Into<Option<SxValue>>) -> Self {
-        Self::ClassVar {
-            class: class.to_string(),
-            var: var.to_string(),
-            fallback: fallback.into().map(|fallback| Box::new(fallback)),
-        }
-    }
-
-    pub fn to_css(self) -> Option<String> {
-        Some(match self {
-            SxValue::Integer(i) => {
-                format!("{i}")
-            }
-            SxValue::Float(f) => {
-                format!("{f}")
-            }
-            SxValue::Percent(p) => {
-                format!("{}%", p * 100.0)
-            }
-            SxValue::FloatDimension { value, unit } => {
-                format!("{value}{unit}")
-            }
-            SxValue::Dimension { value, unit } => {
-                format!("{value}{unit}")
-            }
-            SxValue::CssLiteral(lit) => {
-                format!("{lit}")
-            }
-            SxValue::String(s) => {
-                format!("\"{s}\"")
-            }
-            SxValue::Color(c) => c.to_string(),
-            _other => return None,
-        })
-    }
-}
-
-impl From<i32> for SxValue {
-    fn from(value: i32) -> Self {
-        Self::Integer(value)
-    }
-}
-
-impl From<f32> for SxValue {
-    fn from(value: f32) -> Self {
-        Self::Float(value)
-    }
-}
-
-impl From<&str> for SxValue {
-    fn from(quoted_str: &str) -> Self {
-        let split = quoted_str.split(".").collect::<Vec<_>>();
-        if split.len() == 2 && !(split[0].trim().is_empty() || split[1].trim().is_empty()) {
-            let palette = split[0].trim().to_string();
-            let selector = split[1].trim().to_string();
-
-            SxValue::ThemeToken { palette, selector }
-        } else {
-            quoted_str.parse().unwrap()
-        }
-    }
-}
-
-impl From<Sx> for SxValue {
-    fn from(value: Sx) -> Self {
-        Self::Nested(value)
-    }
-}
-
-impl FromStr for SxValue {
-    type Err = ParseSxValueError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_sx_value(s)
-    }
-}
-
-/// An sx value derived from a function
-#[derive(Clone)]
-pub struct FnSxValue {
-    id: u64,
-    callback: Arc<dyn Fn(&Theme) -> SxValue>,
-}
-
-impl PartialEq for FnSxValue {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
-impl FnSxValue {
-    pub fn new<R, F: Fn(&Theme) -> R + 'static>(callback: F) -> Self
-    where
-        R: Into<SxValue>,
-    {
-        Self {
-            id: rand::random(),
-            callback: Arc::new(move |theme: &Theme| (callback)(theme).into()),
-        }
-    }
-
-    pub fn apply(&self, theme: &Theme) -> SxValue {
-        (self.callback)(theme)
-    }
-}
-
-impl Debug for FnSxValue {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "(&Theme) => SxValue")
     }
 }
 
@@ -371,12 +232,42 @@ mod tests {
     }
 
     #[test]
+    fn merge_sx() {
+        let base = sx! {
+            "bgcolor": "background.level1",
+        };
+        let merged = base.clone().merge(sx! {
+            "bgcolor": SxValue::var("sheet", "background-color", None)
+        });
+
+        assert_eq!(&base["bgcolor"], &SxValue::ThemeToken {
+            palette: "background".to_string(),
+            selector: "level1".to_string(),
+        });
+    }
+
+    #[test]
     fn to_css() {
         let theme = Theme::default();
 
         let sx = sx! {
             padding: "15px",
             color: "background.body"
+        };
+
+        let style = sx.to_css(&ThemeMode::default(), &theme);
+        println!("style: {style:#?}");
+    }
+
+    #[test]
+    fn breakpoints_create_media_queries() {
+        let theme = Theme::new();
+
+        let sx = sx! {
+            padding: "15px",
+            md: {
+                padding: "20px"
+            }
         };
 
         let style = sx.to_css(&ThemeMode::default(), &theme);

@@ -6,10 +6,11 @@ use std::io::Write;
 
 use heck::ToKebabCase;
 
-use crate::theme::sx::SxValue;
+use crate::theme::sx::sx_value::SxValue;
 use crate::theme::theme_mode::ThemeMode;
 use crate::theme::Theme;
 use crate::{Error, Sx};
+use crate::system_props::{CssPropertyTranslator, TranslationUnit};
 
 /// Converts sx to css
 pub fn sx_to_css<'a>(
@@ -73,6 +74,8 @@ fn property_to_declaration<'a, 'b: 'a>(
     query_stack: &'a mut Vec<String>,
 ) -> Result<Declaration, crate::Error> {
     let mut value = Cow::<'a, _>::Borrowed(value);
+    let translator = TranslationUnit::new(&theme.breakpoints);
+    let key = translator.translate(key);
     let resolved: SxValue = loop {
         match value.as_ref() {
             SxValue::Callback(ref cb) => *value.to_mut() = cb.apply(theme),
@@ -109,7 +112,9 @@ fn property_to_declaration<'a, 'b: 'a>(
     match resolved {
         SxValue::Nested(ref nested) => {
             query_stack.push(key.to_string());
-            let key = query_stack.iter().fold(String::new(), |accum, next| {
+            let key = query_stack.iter()
+                .map(|s| translator.translate(s))
+                .fold(String::new(), |accum, next| {
                 if next.starts_with(&['#', '.', '>', '~', '+']) {
                     format!("{}{}", accum, next)
                 } else {
@@ -132,8 +137,11 @@ fn property_to_declaration<'a, 'b: 'a>(
     }
 }
 
-fn to_property(key: &str) -> String {
-    key.split("-")
+/// Converts to css property
+
+pub fn to_property(key: impl AsRef<str>) -> String {
+    key.as_ref()
+        .split("-")
         .map(ToKebabCase::to_kebab_case)
         .collect::<Vec<String>>()
         .join("-")

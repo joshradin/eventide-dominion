@@ -3,7 +3,7 @@ use uuid::Uuid;
 use yew::platform::spawn_local;
 use yew::{classes, function_component, html, use_state, Callback, Html};
 
-use happiness::{surfaces::Box, CssBaseline, ThemeProvider};
+use happiness::{system::Box, CssBaseline, ThemeProvider};
 use ui::components::surfaces::*;
 use ui::Request;
 #[function_component]

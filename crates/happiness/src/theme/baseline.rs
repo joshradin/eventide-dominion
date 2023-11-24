@@ -17,12 +17,12 @@ pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
             )
         }
         emit = emit.merge(sx! {
-            ":root": to_merge
+            "html": to_merge
         })
     }
 
     emit.merge(sx! {
-        ":root": sx! {
+        "html": sx! {
             "color": "text.primary"
         }
     })
@@ -31,8 +31,5 @@ pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
             "background-color": "background.body",
             "margin": "0px"
         },
-        ".sheet": {
-            "--happy-sheet-background-color": "background.level1",
-        }
     })
 }
