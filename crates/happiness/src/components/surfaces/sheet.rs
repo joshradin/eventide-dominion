@@ -1,6 +1,6 @@
 use crate::theme::sx::Sx;
 use crate::theme::{sx, Theme};
-use crate::{components::system::Box, sx, use_sx, theme::sx::SxValue};
+use crate::{components::system::Box, sx, theme::sx::SxValue, use_sx};
 use yew::{function_component, html, Children, Html, Properties};
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]

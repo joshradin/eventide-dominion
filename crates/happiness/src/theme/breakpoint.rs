@@ -5,13 +5,16 @@ use std::ops::{Deref, DerefMut};
 #[derive(Debug, Clone)]
 pub struct Breakpoint {
     abbrev: String,
-    width: u16
+    width: u16,
 }
 
 impl Breakpoint {
     /// Creates a new breakpoint
     fn new(abbrev: &str, width: u16) -> Self {
-        Self { abbrev: abbrev.to_string(), width }
+        Self {
+            abbrev: abbrev.to_string(),
+            width,
+        }
     }
 
     /// Gets the abbreviation used to reference this breakpoint
@@ -43,7 +46,7 @@ impl Default for Breakpoints {
 }
 
 impl<'a> FromIterator<(&'a str, u16)> for Breakpoints {
-    fn from_iter<T: IntoIterator<Item=(&'a str, u16)>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = (&'a str, u16)>>(iter: T) -> Self {
         let mut bp = Breakpoints::new();
         for (key, width) in iter {
             bp.set(key, width);
@@ -59,8 +62,7 @@ impl PartialEq for Breakpoint {
     }
 }
 
-impl Eq for Breakpoint {
-}
+impl Eq for Breakpoint {}
 
 impl PartialOrd for Breakpoint {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -76,11 +78,10 @@ impl Ord for Breakpoint {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Breakpoints {
-    points: BTreeSet<Breakpoint>
+    points: BTreeSet<Breakpoint>,
 }
 
 impl Breakpoints {
-
     /// Creates a new set of breakpoints
     pub fn new() -> Self {
         Self {
@@ -97,7 +98,6 @@ impl Breakpoints {
             }
         }
         let _ = self.points.insert(Breakpoint::new(breakpoint, width));
-
     }
 
     /// Gets the breakpoint at given value
@@ -121,7 +121,7 @@ impl Breakpoints {
 
     /// Gets all the breakpoints
 
-    pub fn points(&self) -> impl IntoIterator<Item=&Breakpoint> {
+    pub fn points(&self) -> impl IntoIterator<Item = &Breakpoint> {
         self.points.iter()
     }
 }
@@ -129,7 +129,7 @@ impl Breakpoints {
 #[derive(Debug)]
 pub struct BreakpointMutRef<'a> {
     bp: Breakpoint,
-    points: &'a mut Breakpoints
+    points: &'a mut Breakpoints,
 }
 
 impl<'a> Deref for BreakpointMutRef<'a> {

@@ -4,13 +4,11 @@ use std::io;
 use std::io::Read;
 
 use indexmap::IndexMap;
-use once_cell::sync::Lazy;
-use regex::Regex;
 use serde::Deserialize;
 
 use crate::theme::gradient::Gradient;
 use crate::theme::palette::Palette;
-use crate::theme::{Color, Theme};
+use crate::theme::{Color, PALETTE_SELECTOR_REGEX, Theme};
 use crate::utils::bounded_float::BoundedFloat;
 
 /// Parses a theme from a reader
@@ -23,11 +21,6 @@ pub fn from_str(reader: &str) -> Result<Theme, io::Error> {
     let json: ThemeJson = serde_json::from_str(reader)?;
     Ok(from_theme_json(json))
 }
-
-static PALETTE_SELECTOR_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"^(?<palette>[a-zA-Z_]\w*)\.(?<selector>\w+)$"#)
-        .expect("could not create palette selector")
-});
 
 fn adjust_color(color: Color, theme: &Theme) -> Color {
     match color {

@@ -1,9 +1,9 @@
-use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
-use std::str::FromStr;
-use crate::Sx;
-use crate::theme::{Color, Theme};
 use crate::theme::sx::sx_value_parsing::{parse_sx_value, ParseSxValueError};
+use crate::theme::{Color, PALETTE_SELECTOR_REGEX, Theme};
+use crate::Sx;
+use std::fmt::{Debug, Formatter};
+use std::str::FromStr;
+use std::sync::Arc;
 
 /// An sx value
 #[derive(Debug, PartialEq, Clone)]
@@ -87,12 +87,13 @@ impl From<f32> for SxValue {
 
 impl From<&str> for SxValue {
     fn from(quoted_str: &str) -> Self {
-        let split = quoted_str.split(".").collect::<Vec<_>>();
-        if split.len() == 2 && !(split[0].trim().is_empty() || split[1].trim().is_empty()) {
-            let palette = split[0].trim().to_string();
-            let selector = split[1].trim().to_string();
+        if let Some(matched) = PALETTE_SELECTOR_REGEX.captures(quoted_str) {
+            let palette = matched["palette"].to_string();
+            let selector = matched["selector"].to_string();
 
             SxValue::ThemeToken { palette, selector }
+        } else if quoted_str.contains(char::is_whitespace) {
+            SxValue::CssLiteral(quoted_str.to_string())
         } else {
             quoted_str.parse().unwrap()
         }

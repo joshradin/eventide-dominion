@@ -121,8 +121,8 @@ impl<'a> From<BasicParseError<'a>> for ParseSxValueError {
 
 #[cfg(test)]
 mod tests {
-    use crate::theme::sx::sx_value_parsing::parse_sx_value;
     use crate::theme::sx::sx_value::SxValue;
+    use crate::theme::sx::sx_value_parsing::parse_sx_value;
     use crate::theme::Color;
 
     #[test]

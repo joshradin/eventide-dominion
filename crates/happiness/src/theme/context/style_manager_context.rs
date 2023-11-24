@@ -1,14 +1,14 @@
-use std::ops::Deref;
-use stylist::manager::StyleManager;
-use std::rc::Rc;
-use gloo::utils::document;
-use web_sys::{HtmlStyleElement, Node};
-use cfg_if::cfg_if;
-use stylist::ast::ToStyleStr;
-use wasm_bindgen::JsCast;
-use crate::{Error, Sx};
-use crate::theme::Theme;
 use crate::theme::theme_mode::ThemeMode;
+use crate::theme::Theme;
+use crate::{Error, Sx};
+use cfg_if::cfg_if;
+use gloo::utils::document;
+use std::ops::Deref;
+use std::rc::Rc;
+use stylist::ast::ToStyleStr;
+use stylist::manager::StyleManager;
+use wasm_bindgen::JsCast;
+use web_sys::{HtmlStyleElement, Node};
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct StyleManagerContext {
@@ -26,7 +26,7 @@ impl StyleManagerContext {
         theme: &Theme,
         mode: &ThemeMode,
         to_mount: Sx,
-    ) -> Result<(), crate::Error> {
+    ) -> Result<(), Error> {
         let document = document();
         let container = self.container().ok_or(Error::Web(None))?;
 
@@ -56,7 +56,6 @@ impl StyleManagerContext {
             } else {
                 container.append_child(&style_element)?;
             }
-
 
             Ok(())
         })()

@@ -1,10 +1,10 @@
-use yew::UseStateHandle;
-use std::ops::{Deref, DerefMut};
 use crate::theme::theme_mode::ThemeMode;
+use std::ops::{Deref, DerefMut};
+use yew::UseStateHandle;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ThemeModeContext {
-    ctx: UseStateHandle<ThemeMode>
+    ctx: UseStateHandle<ThemeMode>,
 }
 
 impl ThemeModeContext {
@@ -12,7 +12,6 @@ impl ThemeModeContext {
         Self { ctx }
     }
 }
-
 
 impl Deref for ThemeModeContext {
     type Target = UseStateHandle<ThemeMode>;

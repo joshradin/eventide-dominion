@@ -6,11 +6,11 @@ use std::io::Write;
 
 use heck::ToKebabCase;
 
+use crate::system_props::{CssPropertyTranslator, TranslationUnit};
 use crate::theme::sx::sx_value::SxValue;
 use crate::theme::theme_mode::ThemeMode;
 use crate::theme::Theme;
 use crate::{Error, Sx};
-use crate::system_props::{CssPropertyTranslator, TranslationUnit};
 
 /// Converts sx to css
 pub fn sx_to_css<'a>(
@@ -112,15 +112,16 @@ fn property_to_declaration<'a, 'b: 'a>(
     match resolved {
         SxValue::Nested(ref nested) => {
             query_stack.push(key.to_string());
-            let key = query_stack.iter()
-                .map(|s| translator.translate(s))
-                .fold(String::new(), |accum, next| {
-                if next.starts_with(&['#', '.', '>', '~', '+']) {
-                    format!("{}{}", accum, next)
-                } else {
-                    format!("{} {}", accum, next)
-                }
-            });
+            let key = query_stack.iter().map(|s| translator.translate(s)).fold(
+                String::new(),
+                |accum, next| {
+                    if next.starts_with(&['#', '.', '>', '~', '+']) {
+                        format!("{}{}", accum, next)
+                    } else {
+                        format!("{} {}", accum, next)
+                    }
+                },
+            );
             let inner = sx_to_declarations(nested, mode, theme, query_stack)?;
             query_stack.pop();
             Ok(Declaration::Rule(Rule {

@@ -1,24 +1,23 @@
 //! Theme context
 
+use mode_context::ThemeModeContext;
 use std::ops::{Deref, DerefMut};
+use style_manager_context::StyleManagerContext;
 use stylist::ast::ToStyleStr;
 use stylist::manager::StyleManager;
 use stylist::yew::styled_component;
-use wasm_bindgen::JsCast;
-use yew::{Children, function_component, html, Html, Properties, use_effect_with, use_state_eq};
-use mode_context::ThemeModeContext;
-use style_manager_context::StyleManagerContext;
 use theme_context::ThemeContext;
+use wasm_bindgen::JsCast;
+use yew::{function_component, html, use_effect_with, use_state_eq, Children, Html, Properties};
 
-use crate::{Error, Sx};
-use crate::theme::{hooks, Theme};
 use crate::theme::baseline::baseline;
 use crate::theme::theme_mode::ThemeMode;
+use crate::theme::{hooks, Theme};
+use crate::{Error, Sx};
 
-pub mod theme_context;
 pub mod mode_context;
 pub mod style_manager_context;
-
+pub mod theme_context;
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct ThemeProviderProps {
@@ -38,7 +37,6 @@ pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
             .expect("could not create style manager")
     }));
     let mode = ThemeModeContext::new(use_state_eq(|| ThemeMode::System.detect()));
-
 
     html! {
             <yew::ContextProvider<ThemeContext> context={theme_state}>

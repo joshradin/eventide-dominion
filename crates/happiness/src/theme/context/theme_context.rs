@@ -1,6 +1,6 @@
+use crate::theme::Theme;
 use std::ops::Deref;
 use yew::UseStateHandle;
-use crate::theme::Theme;
 
 /// The theme context
 #[derive(Debug, Clone)]

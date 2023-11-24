@@ -17,7 +17,10 @@ where
     let sx = source.into();
     let css = use_memo((sx, ctx, mode), |(sx, ctx, mode)| {
         let theme: &Theme = &*ctx;
-        debug!("creating css fron sx:{sx:#?} using theme {} with mode {mode:?}", theme.prefix);
+        debug!(
+            "creating css fron sx:{sx:#?} using theme {} with mode {mode:?}",
+            theme.prefix
+        );
         sx.clone().to_css(mode, theme)
     });
 

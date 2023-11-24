@@ -11,7 +11,7 @@ use crate::theme::breakpoint::Breakpoints;
 /// singleton instance [`SYSTEM_PROPERTIES`](SYSTEM_PROPERTIES).
 #[derive(Debug, Clone)]
 pub struct SystemProperties {
-    mappings: HashMap<String, String>
+    mappings: HashMap<String, String>,
 }
 
 impl SystemProperties {
@@ -27,16 +27,17 @@ impl SystemProperties {
                 ("bgcolor", "backgroundColor"),
                 ("bg", "background"),
             ]
-                .into_iter()
-                .map(|(k, v): (&str, &str)| (k.to_string(), v.to_string()))
-                .collect()
+            .into_iter()
+            .map(|(k, v): (&str, &str)| (k.to_string(), v.to_string()))
+            .collect(),
         }
     }
 }
 
 impl CssPropertyTranslator for SystemProperties {
     fn translate<'a>(&self, query: &'a str) -> Cow<'a, str> {
-        self.mappings.get(query)
+        self.mappings
+            .get(query)
             .map(|result| Cow::Owned(result.clone()))
             .unwrap_or_else(|| Cow::Borrowed(query))
     }
@@ -48,7 +49,7 @@ pub static SYSTEM_PROPERTIES: Lazy<SystemProperties> = Lazy::new(|| SystemProper
 #[derive(Debug)]
 pub struct TranslationUnit {
     props: SystemProperties,
-    bps: Breakpoints
+    bps: Breakpoints,
 }
 
 impl TranslationUnit {
@@ -71,7 +72,6 @@ impl CssPropertyTranslator for TranslationUnit {
         }
     }
 }
-
 
 /// Translate a given property into something else
 pub trait CssPropertyTranslator {

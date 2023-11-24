@@ -1,19 +1,21 @@
 //! Used for theming
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::ops::Deref;
 
 use once_cell::sync::Lazy;
 use yew::Properties;
 
-pub use color::Color;
 use crate::theme::breakpoint::Breakpoints;
+pub use color::Color;
+use regex::Regex;
 
 use crate::theme::palette::Palette;
 
 pub mod color;
 
 pub mod baseline;
+pub mod breakpoint;
 pub mod context;
 pub mod gradient;
 pub mod hooks;
@@ -21,7 +23,6 @@ pub mod palette;
 pub mod serde;
 pub mod sx;
 pub mod theme_mode;
-pub mod breakpoint;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Theme {
@@ -96,3 +97,8 @@ impl Theme {
         &mut self.breakpoints
     }
 }
+
+pub static PALETTE_SELECTOR_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"^(?<palette>[a-zA-Z_]\w*)\.(?<selector>\w+)$"#)
+        .expect("could not create palette selector")
+});

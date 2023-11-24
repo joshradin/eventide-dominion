@@ -1,14 +1,14 @@
 //! Contains the definition of the `Sx` type and the `sx!` macro
 //!
 //!
-use std::fmt::Debug;
-use std::ops::Index;
-use std::str::FromStr;
 use cssparser::ToCss;
 use gloo::history::query::FromQuery;
 use heck::{ToKebabCase, ToLowerCamelCase, ToTrainCase};
 use indexmap::map::Entry;
 use indexmap::IndexMap;
+use std::fmt::Debug;
+use std::ops::Index;
+use std::str::FromStr;
 use stylist::ast::{Sheet, ToStyleStr};
 use stylist::Style;
 use yew::Classes;
@@ -19,16 +19,18 @@ use crate::theme::theme_mode::ThemeMode;
 use crate::theme::Theme;
 
 mod sx_to_css;
-mod sx_value_parsing;
 mod sx_value;
-pub use sx_value::*;
+mod sx_value_parsing;
 use crate::system_props::{CssPropertyTranslator, SYSTEM_PROPERTIES};
+pub use sx_value::*;
 
 /// Contains CSS definition with some customization
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct Sx {
     props: IndexMap<String, SxValue>,
 }
+
+pub type Css = Sheet;
 
 impl Sx {
     /// Sets a css property
@@ -43,16 +45,14 @@ impl Sx {
 
         for (prop, value) in other.props {
             match sx.props.entry(prop) {
-                Entry::Occupied(mut occ) => {
-                    match occ.get_mut() {
-                        SxValue::Nested(old_sx) => {
-                            if let SxValue::Nested(sx) = value {
-                                *old_sx = old_sx.clone().merge(sx);
-                            }
+                Entry::Occupied(mut occ) => match occ.get_mut() {
+                    SxValue::Nested(old_sx) => {
+                        if let SxValue::Nested(sx) = value {
+                            *old_sx = old_sx.clone().merge(sx);
                         }
-                        _ => {}
                     }
-                }
+                    _ => {}
+                },
                 Entry::Vacant(v) => {
                     v.insert(value);
                 }
@@ -62,7 +62,7 @@ impl Sx {
         sx
     }
 
-    pub fn to_css(self, mode: &ThemeMode, theme: &Theme) -> Sheet {
+    pub fn to_css(self, mode: &ThemeMode, theme: &Theme) -> Css {
         let css = sx_to_css(self, mode, theme, None).expect("invalid sx");
         Sheet::from_str(&css).unwrap()
     }
@@ -194,10 +194,11 @@ macro_rules! sx_internal {
         SxValue::Callback(FnSxValue::new(|$theme| $expr))
     };
 
-
     ($expr:expr) => {
         SxValue::try_from($expr).expect("could not create sxvalue")
     };
+
+
 }
 
 /// A style ref can be used as a css class
@@ -240,10 +241,13 @@ mod tests {
             "bgcolor": SxValue::var("sheet", "background-color", None)
         });
 
-        assert_eq!(&base["bgcolor"], &SxValue::ThemeToken {
-            palette: "background".to_string(),
-            selector: "level1".to_string(),
-        });
+        assert_eq!(
+            &base["bgcolor"],
+            &SxValue::ThemeToken {
+                palette: "background".to_string(),
+                selector: "level1".to_string(),
+            }
+        );
     }
 
     #[test]
