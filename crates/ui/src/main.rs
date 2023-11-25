@@ -3,7 +3,7 @@ use uuid::Uuid;
 use yew::platform::spawn_local;
 use yew::{classes, function_component, html, use_state, Callback, Html};
 
-use happiness::{system::Box, CssBaseline, ThemeProvider};
+use happiness::{system::StylingBox, CssBaseline, ThemeProvider};
 use ui::components::surfaces::*;
 use ui::Request;
 #[function_component]
@@ -29,7 +29,7 @@ fn App() -> Html {
     html! {
         <ThemeProvider>
             <CssBaseline />
-            <Box>
+            <StylingBox>
                 <Card outlined=true>
                     <Stack>
                         if let Some(uuid) = *uuid {
@@ -40,7 +40,7 @@ fn App() -> Html {
                         </Sheet>
                     </Stack>
                 </Card>
-            </Box>
+            </StylingBox>
         </ThemeProvider>
     }
 }

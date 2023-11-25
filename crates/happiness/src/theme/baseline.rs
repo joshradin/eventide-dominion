@@ -29,7 +29,7 @@ pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
             "color": "text.primary",
             "bgcolor": "background.level1",
         },
-        ".box": {
+        (format!(".{}-system", theme.prefix)): {
             "[color=success]": {
                 "[variant=outlined]": {
                     "borderWidth": "3px",

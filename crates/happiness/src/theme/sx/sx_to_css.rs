@@ -143,11 +143,10 @@ fn property_to_declaration<'a, 'b: 'a>(
 
 pub fn to_property(key: impl AsRef<str>) -> String {
     let key = key.as_ref();
-    if (key.starts_with('[') && key.ends_with(']')) || key.starts_with(['.', '+', '>', '~']){
+    if (key.starts_with('[') && key.ends_with(']')) || key.starts_with(['.', '+', '>', '~']) {
         key.to_string()
     } else {
-        key
-            .split("-")
+        key.split("-")
             .map(ToKebabCase::to_kebab_case)
             .collect::<Vec<String>>()
             .join("-")
@@ -252,7 +251,6 @@ mod tests {
         let ref mode = ThemeMode::Dark;
 
         let css = sx_to_css(sx, mode, theme, "#root").expect("could not create css");
-        let css = StyleSource::try_from(css).unwrap();
         println!("Css: {:#?}", css);
     }
 

@@ -1,5 +1,5 @@
 use crate::theme::sx::sx_value_parsing::{parse_sx_value, ParseSxValueError};
-use crate::theme::{Color, PALETTE_SELECTOR_REGEX, Theme};
+use crate::theme::{Color, Theme, PALETTE_SELECTOR_REGEX};
 use crate::Sx;
 use std::fmt::{Debug, Formatter};
 use std::str::FromStr;

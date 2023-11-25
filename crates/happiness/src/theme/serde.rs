@@ -8,7 +8,7 @@ use serde::Deserialize;
 
 use crate::theme::gradient::Gradient;
 use crate::theme::palette::Palette;
-use crate::theme::{Color, PALETTE_SELECTOR_REGEX, Theme};
+use crate::theme::{Color, Theme, PALETTE_SELECTOR_REGEX};
 use crate::utils::bounded_float::BoundedFloat;
 
 /// Parses a theme from a reader
@@ -47,7 +47,11 @@ fn from_theme_json(json: ThemeJson) -> Theme {
         .unwrap_or_else(Theme::new);
     for (palette_name, def) in json.palettes {
         let mut palette = Palette::new();
-        if let Some(GradientJson { points: gradient, mode }) = def.gradient {
+        if let Some(GradientJson {
+            points: gradient,
+            mode,
+        }) = def.gradient
+        {
             use GradientMode::*;
             let gradient: Gradient = match mode {
                 None => gradient,

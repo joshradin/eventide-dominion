@@ -23,6 +23,7 @@ pub mod palette;
 pub mod serde;
 pub mod sx;
 pub mod theme_mode;
+pub mod typography;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Theme {

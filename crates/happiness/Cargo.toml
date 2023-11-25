@@ -28,6 +28,7 @@ serde = { version = "1.0.193" }
 serde_json = "1.0.108"
 regex = "1.10.2"
 log = "0.4.20"
+more_collection_macros = "0.2.2"
 
 [dev-dependencies]
 yew = { version = "0.21.0", features=["ssr", "csr"] }

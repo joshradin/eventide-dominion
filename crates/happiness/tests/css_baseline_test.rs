@@ -1,11 +1,11 @@
 use log::info;
 use wasm_bindgen_test::wasm_bindgen_test;
-use yew::{Callback, function_component, html, Html, Renderer, use_callback};
+use yew::{function_component, html, use_callback, Callback, Html, Renderer};
 
-use happiness::{CssBaseline, surfaces::Sheet, ThemeProvider, typography::Typography};
 use happiness::theme::hooks::use_mode;
-use happiness::theme::Theme;
 use happiness::theme::theme_mode::ThemeMode;
+use happiness::theme::Theme;
+use happiness::{surfaces::Sheet, typography::Typography, CssBaseline, ThemeProvider};
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
