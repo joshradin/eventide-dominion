@@ -1,16 +1,17 @@
+use yew::{Children, function_component, html, Html, Properties};
+
+use crate::{components::system::Box, sx, theme::sx::SxValue};
+use crate::style::{Color, Variant};
 use crate::theme::sx::Sx;
-use crate::theme::{sx, Theme};
-use crate::{components::system::Box, sx, theme::sx::SxValue, use_sx};
-use yew::{function_component, html, Children, Html, Properties};
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct SheetProps {
     #[prop_or_default]
     pub sx: Sx,
-    #[prop_or_else(|| "".to_string())]
-    pub variant: String,
-    #[prop_or_else(|| "".to_string())]
-    pub color: String,
+    #[prop_or_default]
+    pub variant: Variant,
+    #[prop_or_default]
+    pub color: Color,
     #[prop_or_default]
     pub children: Children,
 }
@@ -18,11 +19,12 @@ pub struct SheetProps {
 #[function_component]
 pub fn Sheet(props: &SheetProps) -> Html {
     let sx = props.sx.clone().merge(sx! {
-        "bgcolor": SxValue::var("sheet", "background-color", None)
+        "bgcolor": SxValue::var("sheet", "background-color", None),
     });
+    let SheetProps { color, variant, .. } = props;
 
     html! {
-        <Box {sx} class={yew::classes!("sheet")}>
+        <Box {sx} class={yew::classes!("sheet")} {color} {variant}>
             {for props.children.clone()}
         </Box>
     }
@@ -30,9 +32,9 @@ pub fn Sheet(props: &SheetProps) -> Html {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use yew::html::IntoPropValue;
     use yew::{html, ServerRenderer};
+
+    use super::*;
 
     #[tokio::test]
     async fn render_sheet() {

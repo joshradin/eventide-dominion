@@ -1,31 +1,20 @@
 use log::info;
-use wasm_bindgen_test::{console_log, wasm_bindgen_test};
-use yew::{function_component, html, use_callback, Callback, Html, Renderer};
+use wasm_bindgen_test::wasm_bindgen_test;
+use yew::{Callback, function_component, html, Html, Renderer, use_callback};
 
+use happiness::{CssBaseline, surfaces::Sheet, ThemeProvider, typography::Typography};
 use happiness::theme::hooks::use_mode;
-use happiness::theme::theme_mode::ThemeMode;
 use happiness::theme::Theme;
-use happiness::{surfaces::Sheet, sx, CssBaseline, ThemeProvider};
+use happiness::theme::theme_mode::ThemeMode;
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
 #[function_component]
 fn App() -> Html {
-    let theme = Theme::default();
-    let (mode, set_mode): (ThemeMode, Callback<ThemeMode>) = use_mode();
-
-    let onclick = {
-        use_callback(
-            mode.clone(),
-            move |_: yew::events::MouseEvent, mode| match mode {
-                ThemeMode::Light => set_mode.emit(ThemeMode::Dark),
-                ThemeMode::Dark | ThemeMode::System => set_mode.emit(ThemeMode::Light),
-            },
-        )
-    };
+    let theme = yew::functional::use_mut_ref(|| Theme::default());
 
     html! {
-       <ThemeProvider theme={theme}>
+       <ThemeProvider theme={theme.borrow().clone()}>
             <CssBaseline />
             <Main />
         </ThemeProvider>
@@ -48,20 +37,13 @@ fn Main() -> Html {
     };
 
     html! {
-        <Sheet sx={ sx!{
-                    "p": "15px",
-                    "bgcolor": "background.level1",
-                 }}>
-                <Sheet
-                    sx={sx!{
-                        "backgroundColor": "background.level2",
-                        "padding": "10px"
-                    }}
-                >
-                {"Hello, World!"}
-                    <button {onclick}>{format!("{:?}", mode)}</button>
-                </Sheet>
-            </Sheet>
+        <Sheet variant={"outlined"} color={"success"}>
+            <Typography>
+                {"Hello, "}<Typography>{"World!"}</Typography>
+            </Typography>
+            <button {onclick}>{format!("{:?}", mode)}</button>
+
+        </Sheet>
     }
 }
 

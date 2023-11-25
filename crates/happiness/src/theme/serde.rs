@@ -47,40 +47,35 @@ fn from_theme_json(json: ThemeJson) -> Theme {
         .unwrap_or_else(Theme::new);
     for (palette_name, def) in json.palettes {
         let mut palette = Palette::new();
-        match def {
-            PaletteJson::Gradient {
-                points: gradient,
-                mode,
-            } => {
-                use GradientMode::*;
-                let gradient: Gradient = match mode {
-                    None => gradient,
-                    Some(Hsl) => gradient
-                        .into_iter()
-                        .map(|(pt, c)| (pt, c.to_hsla_color().expect("could not convert to hsla")))
-                        .collect(),
-                    Some(Rgb) => gradient
-                        .into_iter()
-                        .map(|(pt, c)| (pt, c.to_rgba_color().expect("could not convert to rgba")))
-                        .collect(),
-                };
-                for i in 0..=10 {
-                    let as_float = BoundedFloat::new(i as f32 / 10.0).expect("must be valid");
-                    palette.insert_constant(&format!("{:03}", i * 10), gradient.get(as_float));
-                }
+        if let Some(GradientJson { points: gradient, mode }) = def.gradient {
+            use GradientMode::*;
+            let gradient: Gradient = match mode {
+                None => gradient,
+                Some(Hsl) => gradient
+                    .into_iter()
+                    .map(|(pt, c)| (pt, c.to_hsla_color().expect("could not convert to hsla")))
+                    .collect(),
+                Some(Rgb) => gradient
+                    .into_iter()
+                    .map(|(pt, c)| (pt, c.to_rgba_color().expect("could not convert to rgba")))
+                    .collect(),
+            };
+            for i in 0..=10 {
+                let as_float = BoundedFloat::new(i as f32 / 10.0).expect("must be valid");
+                palette.insert_constant(&format!("{:03}", i * 10), gradient.get(as_float));
             }
-            PaletteJson::Solid { selectors } => {
-                for (selector, color) in selectors {
-                    match color {
-                        SelectorJson::Const(c) => {
-                            let c = adjust_color(c, &theme);
-                            palette.insert_constant(&selector, c);
-                        }
-                        SelectorJson::DarkLight { dark, light } => {
-                            let dark = adjust_color(dark, &theme);
-                            let light = adjust_color(light, &theme);
-                            palette.insert_by_mode(&selector, dark, light);
-                        }
+        }
+        if let Some(selectors) = def.selectors {
+            for (selector, color) in selectors {
+                match color {
+                    SelectorJson::Const(c) => {
+                        let c = adjust_color(c, &theme);
+                        palette.insert_constant(&selector, c);
+                    }
+                    SelectorJson::DarkLight { dark, light } => {
+                        let dark = adjust_color(dark, &theme);
+                        let light = adjust_color(light, &theme);
+                        palette.insert_by_mode(&selector, dark, light);
                     }
                 }
             }
@@ -105,16 +100,15 @@ enum GradientMode {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum PaletteJson {
-    Gradient {
-        points: Gradient,
-        mode: Option<GradientMode>,
-    },
-    Solid {
-        #[serde(flatten)]
-        selectors: IndexMap<String, SelectorJson>,
-    },
+struct PaletteJson {
+    gradient: Option<GradientJson>,
+    selectors: Option<IndexMap<String, SelectorJson>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GradientJson {
+    points: Gradient,
+    mode: Option<GradientMode>,
 }
 
 #[derive(Debug, Deserialize)]

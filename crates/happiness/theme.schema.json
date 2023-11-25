@@ -27,53 +27,48 @@
   ],
   "$defs": {
     "palette": {
-      "oneOf": [
-        {
+      "type": "object",
+      "description": "Predetermined selectors",
+      "properties": {
+        "selectors": {
           "type": "object",
-          "description": "Predetermined selectors",
+          "patternProperties": {
+            "\\w+": {
+              "$ref": "#/$defs/selector"
+            }
+          }
+        },
+        "gradient": {
+          "type": "object",
           "properties": {
-            "solid": {
+            "points": {
               "type": "object",
               "patternProperties": {
-                "\\w+": {
-                  "$ref": "#/$defs/selector"
-                }
-              }
-            }
-          },
-          "additionalProperties": false,
-          "requiredProperties": ["preset"]
-        },
-        {
-          "type": "object",
-          "description": "provide a gradient",
-          "properties": {
-            "gradient": {
-              "type": "object",
-              "properties": {
-                "points": {
-                  "type": "object",
-                  "patternProperties": {
-                    "((0)?\\.\\d+)|(1\\.0)": {
-                      "$ref": "#/$defs/color"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "requiredProperties": ["0", "1"]
-                },
-                "mode": {
-                  "enum": ["hsl", "rgb"],
-                  "description": "If set, converts all specified points into the given color mode before creating the gradient. This can create different results."
+                "((0)?\\.\\d+)|(1\\.0)": {
+                  "$ref": "#/$defs/color"
                 }
               },
               "additionalProperties": false,
-              "requiredProperties": ["points"]
+              "requiredProperties": [
+                "0",
+                "1"
+              ]
+            },
+            "mode": {
+              "enum": [
+                "hsl",
+                "rgb"
+              ],
+              "description": "If set, converts all specified points into the given color mode before creating the gradient. This can create different results."
             }
           },
           "additionalProperties": false,
-          "requiredProperties": ["gradient"]
+          "requiredProperties": [
+            "points"
+          ]
         }
-      ]
+      },
+      "additionalProperties": false
     },
     "selector": {
       "oneOf": [
@@ -81,10 +76,17 @@
           "type": "object",
           "description": "A selector within the palette",
           "properties": {
-            "dark": { "$ref": "#/$defs/color" },
-            "light": { "$ref": "#/$defs/color" }
+            "dark": {
+              "$ref": "#/$defs/color"
+            },
+            "light": {
+              "$ref": "#/$defs/color"
+            }
           },
-          "required": ["dark", "light"],
+          "required": [
+            "dark",
+            "light"
+          ],
           "additionalProperties": false
         },
         {
@@ -131,7 +133,11 @@
                 }
               },
               "additionalProperties": false,
-              "required": ["r", "g", "b"]
+              "required": [
+                "r",
+                "g",
+                "b"
+              ]
             },
             {
               "type": "object",
@@ -163,7 +169,11 @@
                 }
               },
               "additionalProperties": false,
-              "required": ["h", "s", "l"]
+              "required": [
+                "h",
+                "s",
+                "l"
+              ]
             },
             {
               "type": "object",
@@ -178,7 +188,9 @@
                 }
               },
               "additionalProperties": false,
-              "required": ["var"]
+              "required": [
+                "var"
+              ]
             }
           ]
         }

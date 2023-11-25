@@ -277,4 +277,18 @@ mod tests {
         let style = sx.to_css(&ThemeMode::default(), &theme);
         println!("style: {style:#?}");
     }
+
+    #[test]
+    fn sub_class() {
+        let theme = Theme::new();
+
+        let sx = sx! {
+            ".box": {
+                "p": "10px"
+            }
+        };
+
+        let style = sx.to_css(&ThemeMode::default(), &theme);
+        println!("style: {style:#?}");
+    }
 }

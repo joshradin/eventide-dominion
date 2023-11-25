@@ -1,13 +1,13 @@
 {
   "palettes": {
     "common": {
-      "solid": {
+      "selectors": {
         "white": "#FFFFFF",
         "black": "#000000"
       }
     },
     "background": {
-      "solid": {
+      "selectors": {
         "body": {
           "dark": {
             "var": "common.black",
@@ -45,7 +45,7 @@
       }
     },
     "text": {
-      "solid": {
+      "selectors": {
         "primary": {
           "dark": {
             "var": "neutral.020"
@@ -63,6 +63,57 @@
           "1.0": "#0B0D0E"
         },
         "mode": "rgb"
+      }
+    },
+    "success": {
+      "gradient": {
+        "points": {
+          "0.0": "#e0ffe0",
+          "1.0": "#139513"
+        },
+        "mode": "hsl"
+      },
+      "selectors": {
+        "outlinedActiveBg": {
+          "light": {
+            "var": "success.020"
+          },
+          "dark": {
+            "var": "success.070"
+          }
+        },
+        "outlinedBorder": {
+          "light": {
+            "var": "success.040"
+          },
+          "dark": {
+            "var": "success.060"
+          }
+        },
+        "outlinedColor": {
+          "light": {
+            "var": "success.080"
+          },
+          "dark": {
+            "var": "success.020"
+          }
+        },
+        "outlinedDisabledBorder": {
+          "light": {
+            "var": "neutral.020"
+          },
+          "dark": {
+            "var": "neutral.080"
+          }
+        },
+        "outlinedDisabledColor": {
+          "light": {
+            "var": "neutral.040"
+          },
+          "dark": {
+            "var": "neutral.050"
+          }
+        }
       }
     }
   }

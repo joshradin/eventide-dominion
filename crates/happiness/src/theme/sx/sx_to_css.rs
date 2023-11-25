@@ -112,10 +112,11 @@ fn property_to_declaration<'a, 'b: 'a>(
     match resolved {
         SxValue::Nested(ref nested) => {
             query_stack.push(key.to_string());
+            trace!("query stack: {:?}", query_stack);
             let key = query_stack.iter().map(|s| translator.translate(s)).fold(
                 String::new(),
                 |accum, next| {
-                    if next.starts_with(&['#', '.', '>', '~', '+']) {
+                    if next.starts_with(&['#', '.', '>', '~', '+', '[']) {
                         format!("{}{}", accum, next)
                     } else {
                         format!("{} {}", accum, next)
@@ -141,11 +142,16 @@ fn property_to_declaration<'a, 'b: 'a>(
 /// Converts to css property
 
 pub fn to_property(key: impl AsRef<str>) -> String {
-    key.as_ref()
-        .split("-")
-        .map(ToKebabCase::to_kebab_case)
-        .collect::<Vec<String>>()
-        .join("-")
+    let key = key.as_ref();
+    if (key.starts_with('[') && key.ends_with(']')) || key.starts_with(['.', '+', '>', '~']){
+        key.to_string()
+    } else {
+        key
+            .split("-")
+            .map(ToKebabCase::to_kebab_case)
+            .collect::<Vec<String>>()
+            .join("-")
+    }
 }
 
 #[derive(Debug)]

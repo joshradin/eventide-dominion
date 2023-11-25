@@ -10,10 +10,13 @@ pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
     for (palette_name, palette) in theme.palettes() {
         let mut to_merge = sx!();
         for selector_name in palette.selectors() {
-            let selector = palette.select(selector_name, mode).unwrap();
+            let mut selector = palette.select(selector_name, mode).unwrap().clone();
+            if let Ok(adjusted) = selector.to_rgba_color() {
+                selector = adjusted;
+            }
             to_merge.insert(
                 theme.palette_var(palette_name, selector_name),
-                SxValue::Color(selector.clone()),
+                SxValue::Color(selector),
             )
         }
         emit = emit.merge(sx! {
@@ -22,8 +25,24 @@ pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
     }
 
     emit.merge(sx! {
-        "html": sx! {
-            "color": "text.primary"
+        ":root": sx! {
+            "color": "text.primary",
+            "bgcolor": "background.level1",
+        },
+        ".box": {
+            "[color=success]": {
+                "[variant=outlined]": {
+                    "borderWidth": "3px",
+                    "borderColor": "success.outlinedBorder",
+                    "borderStyle": "solid",
+                    "padding": "3px",
+                    "color": "success.outlinedColor",
+                    "[disabled]": {
+                        "borderColor": "success.outlinedDisabledBorder",
+                        "color": "success.outlinedDisabledColor",
+                    }
+                }
+            }
         }
     })
     .merge(sx! {
