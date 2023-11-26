@@ -22,17 +22,6 @@ pub enum Variant {
 
 impl ImplicitClone for Variant {}
 
-impl IntoPropValue<Variant> for &str {
-    fn into_prop_value(self) -> Variant {
-        for variant in Variant::iter() {
-            if variant.as_ref().to_lowercase() == self {
-                return variant;
-            }
-        }
-        panic!("{self:?} is not a known variant")
-    }
-}
-
 impl Display for Variant {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_ref().to_lowercase())
@@ -51,18 +40,6 @@ pub enum Color {
 }
 
 impl ImplicitClone for Color {}
-
-impl IntoPropValue<Color> for &str {
-    fn into_prop_value(self) -> Color {
-        for color in Color::iter() {
-            if color.as_ref().to_lowercase() == self {
-                return color;
-            }
-        }
-        panic!("{self:?} is not a known color")
-    }
-}
-
 impl Display for Color {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_ref().to_lowercase())

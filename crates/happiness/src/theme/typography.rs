@@ -1,10 +1,13 @@
-use crate::style::Size;
-use crate::Sx;
-use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 /// Typography provides
 use std::fmt::{Display, Formatter};
+
+use serde::{Deserialize, Deserializer};
 use yew::html::IntoPropValue;
+
+use crate::style::Size;
+use crate::theme::sx::SxValue;
+use crate::Sx;
 
 /// The level for typography
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -16,6 +19,7 @@ pub enum TypographyLevel {
     Title { size: Size },
     Body { size: Size },
     Custom(String),
+    Star,
 }
 
 impl<'de> Deserialize<'de> for TypographyLevel {
@@ -53,6 +57,9 @@ impl Display for TypographyLevel {
             TypographyLevel::Custom(s) => {
                 write!(f, "{s}")
             }
+            TypographyLevel::Star => {
+                write!(f, "*")
+            }
         }
     }
 }
@@ -66,6 +73,7 @@ impl IntoPropValue<TypographyLevel> for &str {
 impl From<&str> for TypographyLevel {
     fn from(value: &str) -> Self {
         match value {
+            "*" => TypographyLevel::Star,
             "h1" => TypographyLevel::H1,
             "h2" => TypographyLevel::H2,
             "h3" => TypographyLevel::H3,
@@ -106,9 +114,17 @@ impl TypographyScale {
         }
     }
 
-    /// Shortcut for getting an [`Sx`](Sx) instance for a given.
+    /// Shortcut for getting an [`Sx`](Sx) instance for a given, and also merges it with the "*" sx level
     pub fn at(&self, level: &TypographyLevel) -> Option<Sx> {
-        self.scale(level).map(LevelScale::sx)
+        self.scale(level)
+            .map(LevelScale::sx)
+            .map(|sx| match self.scale(&TypographyLevel::Star) {
+                None => sx,
+                Some(star_sx) => {
+                    let star_sx = star_sx.sx();
+                    sx.merge(star_sx)
+                }
+            })
     }
 
     /// Gets the scale at the given level

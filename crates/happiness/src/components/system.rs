@@ -4,8 +4,10 @@ use crate::style::{Color, Variant};
 use crate::sx;
 use crate::theme::hooks::{use_sx, use_theme};
 use crate::theme::sx::Sx;
+use std::ops::Deref;
+use strum::IntoEnumIterator;
 use web_sys::HtmlElement;
-use yew::html::Children;
+use yew::html::{Children, ImplicitClone, IntoPropValue};
 use yew::{classes, function_component, html, use_effect_with, Classes, Html, NodeRef, Properties};
 
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
@@ -13,9 +15,9 @@ pub struct StylingBoxProps {
     #[prop_or_default]
     pub sx: Sx,
     #[prop_or_default]
-    pub variant: Option<Variant>,
+    pub variant: VariantProp,
     #[prop_or_default]
-    pub color: Option<Color>,
+    pub color: ColorProp,
     #[prop_or_else(|| "div".to_string())]
     pub component: String,
     #[prop_or_else(|| classes!("box"))]
@@ -30,8 +32,9 @@ pub struct StylingBoxProps {
 pub fn StylingBox(props: &StylingBoxProps) -> Html {
     let sx = use_sx(props.sx.clone());
     let theme = use_theme();
-    let mut classes = classes!(sx, format!("{}-system", theme.prefix));
+    let mut classes = classes!(sx);
     classes.extend(props.class.clone());
+    classes.extend(classes!(format!("{}-system", theme.prefix)));
 
     let html_ref = yew::use_node_ref();
     {
@@ -43,12 +46,12 @@ pub fn StylingBox(props: &StylingBoxProps) -> Html {
                 let element: HtmlElement = node
                     .cast::<HtmlElement>()
                     .expect("should be an html element");
-                if let Some(variant) = variant {
+                if let Some(variant) = **variant {
                     element
                         .set_attribute("variant", &variant.to_string())
                         .expect("could not set variant attribute");
                 }
-                if let Some(color) = color {
+                if let Some(color) = **color {
                     element
                         .set_attribute("color", &color.to_string())
                         .expect("could not set color attribute");
@@ -70,6 +73,66 @@ pub fn StylingBox(props: &StylingBoxProps) -> Html {
         </@>
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct VariantProp(Option<Variant>);
+
+impl IntoPropValue<VariantProp> for &str {
+    fn into_prop_value(self) -> VariantProp {
+        for var in Variant::iter() {
+            if var.as_ref().to_lowercase() == self {
+                return VariantProp(Some(var));
+            }
+        }
+        panic!("no variant named {}", self)
+    }
+}
+
+impl IntoPropValue<VariantProp> for Variant {
+    fn into_prop_value(self) -> VariantProp {
+        VariantProp(Some(self))
+    }
+}
+
+impl Deref for VariantProp {
+    type Target = Option<Variant>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ImplicitClone for VariantProp {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct ColorProp(Option<Color>);
+
+impl IntoPropValue<ColorProp> for &str {
+    fn into_prop_value(self) -> ColorProp {
+        for var in Color::iter() {
+            if var.as_ref().to_lowercase() == self {
+                return ColorProp(Some(var));
+            }
+        }
+        panic!("no Color named {}", self)
+    }
+}
+
+impl IntoPropValue<ColorProp> for Color {
+    fn into_prop_value(self) -> ColorProp {
+        ColorProp(Some(self))
+    }
+}
+
+impl Deref for ColorProp {
+    type Target = Option<Color>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ImplicitClone for ColorProp {}
 
 #[cfg(test)]
 mod tests {

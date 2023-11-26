@@ -6,11 +6,11 @@ use std::io::Write;
 
 use heck::ToKebabCase;
 
-use crate::{Error, Sx};
 use crate::system_props::{CssPropertyTranslator, TranslationUnit};
 use crate::theme::sx::sx_value::SxValue;
-use crate::theme::Theme;
 use crate::theme::theme_mode::ThemeMode;
+use crate::theme::Theme;
+use crate::{utils, Error, Sx};
 
 /// Converts sx to css
 pub fn sx_to_css<'a>(
@@ -61,7 +61,7 @@ fn sx_to_declarations<'a>(
     let query_stack = query_stack;
     for (key, value) in sx.props.iter() {
         let declaration = property_to_declaration(&*key, value, mode, theme, query_stack)?;
-        declarations.push(declaration);
+        declarations.extend(declaration);
     }
     Ok(declarations)
 }
@@ -72,7 +72,7 @@ fn property_to_declaration<'a, 'b: 'a>(
     mode: &'a ThemeMode,
     theme: &'a Theme,
     query_stack: &'a mut Vec<String>,
-) -> Result<Declaration, crate::Error> {
+) -> Result<Vec<Declaration>, crate::Error> {
     let mut value = Cow::<'a, _>::Borrowed(value);
     let translator = TranslationUnit::new(&theme.breakpoints);
     let key = translator.translate(key);
@@ -83,14 +83,17 @@ fn property_to_declaration<'a, 'b: 'a>(
                 ref palette,
                 ref selector,
             } => {
-                let palette = theme
+                let def_palette = theme
                     .get_palette(palette)
                     .unwrap_or_else(|| panic!("no palette named {palette:?} found"));
-                let color = palette
+                let _ = def_palette
                     .select(selector, mode)
                     .unwrap_or_else(|| panic!("Could not find selector {selector:?} in palette"));
 
-                break SxValue::Color(color.clone());
+                break SxValue::CssLiteral(format!(
+                    "var({})",
+                    theme.palette_var(palette, selector)
+                ));
             }
             SxValue::ClassVar {
                 class,
@@ -111,61 +114,41 @@ fn property_to_declaration<'a, 'b: 'a>(
     };
     match resolved {
         SxValue::Nested(ref nested) => {
-            query_stack.push(key.to_string());
-            trace!("query stack: {:?}", query_stack);
-            let key = query_stack.iter().map(|s| translator.translate(s)).fold(
-                String::new(),
-                |accum, next| {
-                    if next.starts_with(&['>', '~', '+', ',']) {
-                        format!("{}{}", accum, next)
-                    } else if next.starts_with("&") {
-                        format!("{}{}", accum, next.strip_prefix("&").unwrap())
-                    } else {
-                        format!("{} {}", accum, next)
-                    }
-                },
-            );
-            let inner = sx_to_declarations(nested, mode, theme, query_stack)?;
-            query_stack.pop();
-            Ok(Declaration::Rule(Rule {
-                query: key.to_string(),
-                block: inner,
-            }))
+            let mut emit = vec![];
+            for key in key {
+                query_stack.push(key.to_string());
+                trace!("query stack: {:?}", query_stack);
+                let key = query_stack
+                    .iter()
+                    .flat_map(|s| translator.translate(s))
+                    .fold(String::new(), |accum, next| {
+                        if next.starts_with(&['>', '~', '+', ',']) {
+                            format!("{}{}", accum, next)
+                        } else if next.starts_with("&") {
+                            format!("{}{}", accum, next.strip_prefix("&").unwrap())
+                        } else {
+                            format!("{} {}", accum, next)
+                        }
+                    });
+                let inner = sx_to_declarations(nested, mode, theme, query_stack)?;
+                query_stack.pop();
+                emit.push(Declaration::Rule(Rule {
+                    query: key.to_string(),
+                    block: inner,
+                }));
+            }
+            Ok(emit)
         }
-        simple => Ok(Declaration::SetProperty {
-            property: to_property(key),
-            value: simple
-                .to_css()
-                .expect("should always be able to convert to css now"),
-        }),
-    }
-}
-
-pub static CSS_SELECTOR_OPERATORS: &[char] = &['.', '+', '>', '~', '&', ','];
-
-/// Converts to css property
-
-pub fn to_property(key: impl AsRef<str>) -> String {
-    let key = key.as_ref();
-    if (key.starts_with('[') && key.ends_with(']')) || key.starts_with(CSS_SELECTOR_OPERATORS) {
-        key.to_string()
-    } else {
-        key.split_inclusive(CSS_SELECTOR_OPERATORS)
-            .map(|key_part| {
-                let selector_index = key_part.rfind(CSS_SELECTOR_OPERATORS);
-                let selector_op = selector_index.as_ref().map(|index| &key_part[*index..]);
-
-                let reworked= selector_index.map(|index| &key_part[..index])
-                    .unwrap_or(key_part)
-                    .split('-')
-                   .map(ToKebabCase::to_kebab_case)
-                   .collect::<Vec<String>>()
-                   .join("-");
-
-                format!("{reworked}{}", selector_op.unwrap_or(""))
+        simple => Ok(key
+            .into_iter()
+            .map(|key| Declaration::SetProperty {
+                property: utils::to_property(key),
+                value: simple
+                    .clone()
+                    .to_css()
+                    .expect("should always be able to convert to css now"),
             })
-            .collect::<String>()
-
+            .collect()),
     }
 }
 
@@ -236,6 +219,7 @@ impl Display for Declaration {
 #[cfg(test)]
 mod tests {
     use crate::sx;
+    use crate::utils::to_property;
 
     use super::*;
 

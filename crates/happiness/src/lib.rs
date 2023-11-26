@@ -18,3 +18,10 @@ pub mod system_props;
 pub mod utils;
 
 pub mod style;
+
+/// The prelude
+pub mod prelude {
+    pub use crate::style::*;
+    pub use crate::sx;
+    pub use crate::theme::{sx::Sx, Theme};
+}

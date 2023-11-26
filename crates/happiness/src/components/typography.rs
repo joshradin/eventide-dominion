@@ -3,16 +3,15 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use yew::{
-    Children, classes, ContextProvider, function_component, html, Html, html_nested,
-    Properties,
-};
 use yew::html::IntoPropValue;
+use yew::{
+    classes, function_component, html, html_nested, Children, ContextProvider, Html, Properties,
+};
 
-use crate::Sx;
-use crate::style::Size;
-use crate::system::StylingBox;
+use crate::style::{Color, Size, Variant};
+use crate::system::{ColorProp, StylingBox, VariantProp};
 use crate::theme::typography::TypographyLevel;
+use crate::Sx;
 
 pub type TypographyLevelMapping = HashMap<TypographyLevel, String>;
 
@@ -48,6 +47,10 @@ pub struct TypographyProps {
     pub sx: Sx,
     #[prop_or_default]
     pub level: TypographyLevel,
+    #[prop_or_default]
+    pub variant: VariantProp,
+    #[prop_or_default]
+    pub color: ColorProp,
     #[prop_or_else(default_level_mapping)]
     pub mapping: TypographyLevelMapping,
     #[prop_or_default]
@@ -63,6 +66,8 @@ pub fn Typography(props: &TypographyProps) -> Html {
         children,
         level,
         mapping,
+        variant,
+        color,
         ..
     } = props;
 
@@ -94,7 +99,7 @@ pub fn Typography(props: &TypographyProps) -> Html {
 
     let classes = classes!("typography", level.to_string());
     let inner = html_nested! {
-        <StylingBox class={classes} sx={sx.clone()} component={(*component).clone()}>
+        <StylingBox {variant} {color} class={classes} sx={sx.clone()} component={(*component).clone()}>
             { for props.children.iter() }
         </StylingBox>
     };

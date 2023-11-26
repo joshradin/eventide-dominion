@@ -1,6 +1,7 @@
 use yew::{function_component, html, Children, Html, Properties};
 
 use crate::style::{Color, Variant};
+use crate::system::{ColorProp, VariantProp};
 use crate::theme::sx::Sx;
 use crate::{components::system::StylingBox, sx, theme::sx::SxValue};
 
@@ -9,9 +10,9 @@ pub struct SheetProps {
     #[prop_or_default]
     pub sx: Sx,
     #[prop_or_default]
-    pub variant: Variant,
+    pub variant: VariantProp,
     #[prop_or_default]
-    pub color: Color,
+    pub color: ColorProp,
     #[prop_or_default]
     pub children: Children,
 }

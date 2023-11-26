@@ -1,5 +1,17 @@
 {
   "typography": {
+    "*": {
+      "font-family": "Inter, Arial, sans-serif",
+      "&[variant=outlined]": {
+        "borderWidth": "0.1em",
+        "line-height": "1.7em",
+        "padding": "0.1em"
+      },
+      "+code": {
+        "white-space": "pre-wrap",
+        "font-family": "monospace"
+      }
+    },
     "body-xs": {
       "fontWeight": 400,
       "fontSize": "8px"
@@ -67,26 +79,26 @@
         },
         "level1": {
           "dark": {
+            "var": "neutral.100"
+          },
+          "light": {
+            "var": "neutral.000"
+          }
+        },
+        "level2": {
+          "dark": {
             "var": "neutral.090"
           },
           "light": {
             "var": "neutral.010"
           }
         },
-        "level2": {
+        "level3": {
           "dark": {
             "var": "neutral.080"
           },
           "light": {
             "var": "neutral.020"
-          }
-        },
-        "level3": {
-          "dark": {
-            "var": "neutral.070"
-          },
-          "light": {
-            "var": "neutral.030"
           }
         }
       }
@@ -106,8 +118,8 @@
     "neutral": {
       "gradient": {
         "points": {
-          "0.0": "#FBFCFE",
-          "1.0": "#0B0D0E"
+          "0.0": "#E4E4E4",
+          "1.0": "#2B2B2B"
         },
         "mode": "rgb"
       }

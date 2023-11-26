@@ -2,6 +2,7 @@ use log::info;
 use wasm_bindgen_test::wasm_bindgen_test;
 use yew::{function_component, html, use_callback, Callback, Html, Renderer};
 
+use happiness::prelude::*;
 use happiness::theme::hooks::use_mode;
 use happiness::theme::theme_mode::ThemeMode;
 use happiness::theme::Theme;
@@ -37,10 +38,37 @@ fn Main() -> Html {
     };
 
     html! {
-        <Sheet variant={"outlined"} color={"success"}>
-            <Typography level="title-md">{"Hello, world"}</Typography>
-            <Typography level="body-md">{"Welcome to the happy style system, a better way of writing text in yew"}</Typography>
-            <button {onclick}>{format!("{:?}", mode)}</button>
+        <Sheet sx={sx!{
+            "width": "100dvw",
+            "height": "100dvh",
+            "display": "inline-block",
+            "bgcolor": "background.level1"
+        }}>
+            <Sheet variant={"outlined"} sx={sx!{
+                "marginX": "15%",
+                "marginTop": "5dvh",
+                "bgcolor": "background.level2"
+            }}>
+                <Typography level="title-lg">{"Hello, world"}</Typography>
+                <Typography level="body-md">
+                {r"Welcome to the happy style system, a better way of writing text in yew.
+                You can do many things with it, like "}<Typography variant="outlined">{"outlining text"}</Typography>{". \
+                Or maybe giving it a bit of "}<Typography color="success">{"color"}</Typography>{"."}
+                </Typography>
+                <Typography level="body-xs" component="code" sx={sx!{
+            display: "flex",
+            alignItems: "center",
+            flexDirection: "column"
+        }}>
+                {r###"<Typography level="title-lg">{"Hello, world"}</Typography>
+<Typography level="body-sm">
+    {r"Welcome to the happy style system, a better way of writing text in yew.
+    You can do many things with it, like "}<Typography variant="outlined">{"outlining text"}</Typography>{"."}
+</Typography>"###}
+                </Typography>
+                <Typography />
+                <button {onclick}>{format!("{:?}", mode)}</button>
+            </Sheet>
         </Sheet>
     }
 }

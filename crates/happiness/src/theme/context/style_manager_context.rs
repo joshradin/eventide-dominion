@@ -3,9 +3,9 @@ use crate::theme::Theme;
 use crate::{Error, Sx};
 use cfg_if::cfg_if;
 use gloo::utils::document;
+use minifier::css::Minified;
 use std::ops::Deref;
 use std::rc::Rc;
-use minifier::css::Minified;
 use stylist::ast::ToStyleStr;
 use stylist::manager::StyleManager;
 use wasm_bindgen::JsCast;
@@ -50,7 +50,6 @@ impl StyleManagerContext {
             } else {
                 style_element.set_text_content(Some(&base_css));
             }
-
 
             let list = container.child_nodes();
             let len = list.length();

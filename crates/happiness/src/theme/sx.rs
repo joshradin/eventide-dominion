@@ -15,7 +15,7 @@ use stylist::Style;
 use yew::Classes;
 
 pub use crate::theme::sx;
-use crate::theme::sx::sx_to_css::{sx_to_css, to_property};
+use crate::theme::sx::sx_to_css::sx_to_css;
 use crate::theme::theme_mode::ThemeMode;
 use crate::theme::Theme;
 
@@ -23,6 +23,7 @@ mod sx_to_css;
 mod sx_value;
 mod sx_value_parsing;
 use crate::system_props::{CssPropertyTranslator, SYSTEM_PROPERTIES};
+use crate::utils::to_property;
 pub use sx_value::*;
 
 /// Contains CSS definition with some customization
@@ -36,8 +37,11 @@ pub type Css = Sheet;
 impl Sx {
     /// Sets a css property
     pub fn insert<K: AsRef<str>, V: Into<SxValue>>(&mut self, key: K, value: V) {
-        let translated = SYSTEM_PROPERTIES.translate(key.as_ref()).to_string();
-        self.props.insert(to_property(translated), value.into());
+        let translated = SYSTEM_PROPERTIES.translate(key.as_ref());
+        let value = value.into();
+        for translated in translated {
+            self.props.insert(to_property(translated), value.clone());
+        }
     }
 
     /// Merges this Sx with another Sx. Uses the left's values for conflicting keys.

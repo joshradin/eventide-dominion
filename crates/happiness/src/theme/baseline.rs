@@ -1,5 +1,6 @@
 use crate::theme::sx::SxValue;
 use crate::theme::theme_mode::ThemeMode;
+use crate::theme::typography::TypographyLevel;
 use crate::theme::Theme;
 use crate::{sx, Sx};
 
@@ -7,9 +8,12 @@ use crate::{sx, Sx};
 pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
     let mut emit = sx!();
 
-    for (typography_level, scale) in theme.typography() {
-        let sx = scale.sx();
-        emit.insert(format!(".{}", typography_level), sx);
+    let theme_system_class = theme.system_class();
+    for (typography_level, _) in theme.typography() {
+        if typography_level != &TypographyLevel::Star {
+            let sx = theme.typography().at(typography_level).unwrap();
+            emit.insert(format!("{theme_system_class}.{typography_level}"), sx);
+        }
     }
 
     for (palette_name, palette) in theme.palettes() {
@@ -30,23 +34,30 @@ pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
     }
 
     emit.merge(sx! {
-        ":root": sx! {
+        ":root, html": {
             "color": "text.primary",
-            "bgcolor": "background.level1",
+            "bgcolor": "background.body",
         },
-        "p, span, code": {
+        "p, span, code, h1, h2, h3, h4": {
             "margin-block-start": "0.1em",
             "margin-block-end": "0.1em",
             "margin-inline-start": "0px",
             "margin-inline-end": "0px",
         },
-        (format!(".{}-system", theme.prefix)): {
+        "body": {
+            "margin": "0",
+        },
+        (theme.system_class()): {
             "&[color=success]": {
-                "&[variant=outlined]": {
-                    "borderWidth": "3px",
+                "color": "success.050",
+            },
+            "&[variant=outlined]": {
+                "borderWidth": "3px",
+                "borderStyle": "solid",
+                "padding": "3px",
+                "borderColor": "inherit",
+                "&[color=success]": {
                     "borderColor": "success.outlinedBorder",
-                    "borderStyle": "solid",
-                    "padding": "3px",
                     "color": "success.outlinedColor",
                     "&[disabled]": {
                         "borderColor": "success.outlinedDisabledBorder",
@@ -56,10 +67,18 @@ pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
             }
         }
     })
-    .merge(sx! {
-        "body": {
-            "background-color": "background.body",
-            "margin": "0px"
-        },
-    })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::theme::baseline::baseline;
+    use crate::theme::theme_mode::ThemeMode;
+
+    #[test]
+    fn create_light_baseline() {
+        let theme = Theme::default();
+        let baseline = baseline(&theme, &ThemeMode::Light);
+        println!("baseline: {baseline:#?}");
+    }
 }

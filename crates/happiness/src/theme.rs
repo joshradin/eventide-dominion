@@ -12,6 +12,7 @@ use regex::Regex;
 
 use crate::theme::palette::Palette;
 use crate::theme::typography::{TypographyLevel, TypographyScale};
+use crate::utils::to_property;
 
 pub mod color;
 
@@ -79,11 +80,11 @@ impl Theme {
     }
 
     pub fn palette_var(&self, palette: &str, selector: &str) -> String {
-        format!("--{}-palette-{palette}-{selector}", self.prefix)
+        to_property(format!("--{}-palette-{palette}-{selector}", self.prefix))
     }
 
     pub fn class_var(&self, class: &str, var_name: &str) -> String {
-        format!("--{}-{class}-{var_name}", self.prefix)
+        to_property(format!("--{}-{class}-{var_name}", self.prefix))
     }
 
     /// Gets all palettes
@@ -109,6 +110,10 @@ impl Theme {
     /// Gets the typography scale
     pub fn typography_mut(&mut self) -> &mut TypographyScale {
         &mut self.typography
+    }
+
+    pub fn system_class(&self) -> String {
+        format!(".{}-system", self.prefix)
     }
 }
 

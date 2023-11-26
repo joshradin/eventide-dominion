@@ -11,35 +11,53 @@ use crate::theme::breakpoint::Breakpoints;
 /// singleton instance [`SYSTEM_PROPERTIES`](SYSTEM_PROPERTIES).
 #[derive(Debug, Clone)]
 pub struct SystemProperties {
-    mappings: HashMap<String, String>,
+    mappings: HashMap<String, Vec<String>>,
 }
+
+static SYSTEM_PROPS_MAP: &[(&str, &[&str])] = &[
+    ("p", &["padding"]),
+    ("pl", &["paddingLeft"]),
+    ("pr", &["paddingRight"]),
+    ("pt", &["paddingTop"]),
+    ("pb", &["paddingBottom"]),
+    ("pX", &["paddingLeft", "paddingRight"]),
+    ("pY", &["paddingTop", "paddingBottom"]),
+    ("bgcolor", &["backgroundColor"]),
+    ("bg", &["background"]),
+    ("marginX", &["margin-left", "margin-right"]),
+    ("marginY", &["margin-top", "margin-bottom"]),
+];
 
 impl SystemProperties {
     /// Create a new system properties instance
     fn new() -> Self {
+
         Self {
-            mappings: [
-                ("p", "padding"),
-                ("pl", "paddingLeft"),
-                ("pr", "paddingRight"),
-                ("pt", "paddingTop"),
-                ("pd", "paddingDown"),
-                ("bgcolor", "backgroundColor"),
-                ("bg", "background"),
-            ]
-            .into_iter()
-            .map(|(k, v): (&str, &str)| (k.to_string(), v.to_string()))
+            mappings:
+            SYSTEM_PROPS_MAP
+            .iter()
+            .map(|(k, v): &(&str, &[&str])| {
+                (
+                    k.to_string(),
+                    v.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
+                )
+            })
             .collect(),
         }
     }
 }
 
 impl CssPropertyTranslator for SystemProperties {
-    fn translate<'a>(&self, query: &'a str) -> Cow<'a, str> {
+    fn translate<'a>(&self, query: &'a str) -> Vec<Cow<'a, str>> {
         self.mappings
             .get(query)
-            .map(|result| Cow::Owned(result.clone()))
-            .unwrap_or_else(|| Cow::Borrowed(query))
+            .map(|result| {
+                result
+                    .iter()
+                    .map(|s| Cow::<str>::Owned(s.clone()))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_else(move || vec![Cow::Borrowed(query)])
     }
 }
 
@@ -62,13 +80,16 @@ impl TranslationUnit {
 }
 
 impl CssPropertyTranslator for TranslationUnit {
-    fn translate<'a>(&self, query: &'a str) -> Cow<'a, str> {
-        if let Some(translated) = self.props.mappings.get(query) {
-            Cow::Owned(translated.clone())
+    fn translate<'a>(&self, query: &'a str) -> Vec<Cow<'a, str>> {
+        if self.props.mappings.contains_key(query) {
+            self.props.translate(query)
         } else if let Some(breakpoint) = self.bps.get(query) {
-            Cow::Owned(format!("@media (min-width: {}px)", breakpoint.width()))
+            vec![Cow::Owned(format!(
+                "@media (min-width: {}px)",
+                breakpoint.width()
+            ))]
         } else {
-            Cow::Borrowed(query)
+            vec![Cow::Borrowed(query)]
         }
     }
 }
@@ -76,5 +97,5 @@ impl CssPropertyTranslator for TranslationUnit {
 /// Translate a given property into something else
 pub trait CssPropertyTranslator {
     /// Translates
-    fn translate<'a>(&self, query: &'a str) -> Cow<'a, str>;
+    fn translate<'a>(&self, query: &'a str) -> Vec<Cow<'a, str>>;
 }

@@ -22,6 +22,12 @@
     "typography": {
       "type": "object",
       "description": "provides layout details for object levels",
+      "properties": {
+        "*": {
+          "description": "applies to every level",
+          "$ref": "#/$defs/typography_scale"
+        }
+      },
       "patternProperties": {
         "h[1-4]": {
           "$ref": "#/$defs/typography_scale",
