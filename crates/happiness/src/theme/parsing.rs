@@ -8,8 +8,11 @@ use serde::Deserialize;
 
 use crate::theme::gradient::Gradient;
 use crate::theme::palette::Palette;
+use crate::theme::sx::SxValue;
+use crate::theme::typography::TypographyLevel;
 use crate::theme::{Color, Theme, PALETTE_SELECTOR_REGEX};
 use crate::utils::bounded_float::BoundedFloat;
+use crate::{sx, Sx};
 
 /// Parses a theme from a reader
 pub fn from_reader<R: Read>(reader: R) -> Result<Theme, io::Error> {
@@ -40,11 +43,18 @@ fn adjust_color(color: Color, theme: &Theme) -> Color {
     }
 }
 fn from_theme_json(json: ThemeJson) -> Theme {
-    println!("json = {json:#?}");
+    trace!("json: {:#?}", json);
     let mut theme = json
         .prefix
         .map(|prefix| Theme::with_prefix(prefix))
         .unwrap_or_else(Theme::new);
+
+    if let Some(typography_scale) = json.typography {
+        for (level, scale) in typography_scale.levels {
+            theme.typography_mut().insert(level, scale.to_sx().into());
+        }
+    }
+
     for (palette_name, def) in json.palettes {
         let mut palette = Palette::new();
         if let Some(GradientJson {
@@ -94,6 +104,7 @@ fn from_theme_json(json: ThemeJson) -> Theme {
 struct ThemeJson {
     prefix: Option<String>,
     palettes: IndexMap<String, PaletteJson>,
+    typography: Option<TypographyScaleJson>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -122,9 +133,48 @@ enum SelectorJson {
     DarkLight { dark: Color, light: Color },
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(transparent)]
+struct TypographyScaleJson {
+    levels: IndexMap<TypographyLevel, SxJson>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(transparent)]
+struct SxJson {
+    mapping: IndexMap<String, SxJsonValue>,
+}
+
+impl SxJson {
+    fn to_sx(&self) -> Sx {
+        let mut sx = sx! {};
+        for (key, value) in &self.mapping {
+            let sx_value = match value {
+                SxJsonValue::String(lit) => SxValue::CssLiteral(lit.clone()),
+                SxJsonValue::Nested(nested) => SxValue::Nested(nested.to_sx()),
+                SxJsonValue::Boolean(b) => SxValue::CssLiteral(b.to_string()),
+                SxJsonValue::Int(i) => SxValue::Integer(*i),
+                SxJsonValue::Float(f) => SxValue::Float(*f),
+            };
+            sx.insert(key.to_owned(), sx_value);
+        }
+        sx
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum SxJsonValue {
+    String(String),
+    Boolean(bool),
+    Int(i32),
+    Float(f32),
+    Nested(SxJson),
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::theme::serde::from_str;
+    use crate::theme::parsing::from_str;
 
     #[test]
     fn parse_theme_json() {

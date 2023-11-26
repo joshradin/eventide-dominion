@@ -7,6 +7,11 @@ use crate::{sx, Sx};
 pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
     let mut emit = sx!();
 
+    for (typography_level, scale) in theme.typography() {
+        let sx = scale.sx();
+        emit.insert(format!(".{}", typography_level), sx);
+    }
+
     for (palette_name, palette) in theme.palettes() {
         let mut to_merge = sx!();
         for selector_name in palette.selectors() {
@@ -29,15 +34,21 @@ pub fn baseline(theme: &Theme, mode: &ThemeMode) -> Sx {
             "color": "text.primary",
             "bgcolor": "background.level1",
         },
+        "p, span, code": {
+            "margin-block-start": "0.1em",
+            "margin-block-end": "0.1em",
+            "margin-inline-start": "0px",
+            "margin-inline-end": "0px",
+        },
         (format!(".{}-system", theme.prefix)): {
-            "[color=success]": {
-                "[variant=outlined]": {
+            "&[color=success]": {
+                "&[variant=outlined]": {
                     "borderWidth": "3px",
                     "borderColor": "success.outlinedBorder",
                     "borderStyle": "solid",
                     "padding": "3px",
                     "color": "success.outlinedColor",
-                    "[disabled]": {
+                    "&[disabled]": {
                         "borderColor": "success.outlinedDisabledBorder",
                         "color": "success.outlinedDisabledColor",
                     }

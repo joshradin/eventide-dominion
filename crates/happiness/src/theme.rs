@@ -11,6 +11,7 @@ pub use color::Color;
 use regex::Regex;
 
 use crate::theme::palette::Palette;
+use crate::theme::typography::{TypographyLevel, TypographyScale};
 
 pub mod color;
 
@@ -20,7 +21,7 @@ pub mod context;
 pub mod gradient;
 pub mod hooks;
 pub mod palette;
-pub mod serde;
+pub mod parsing;
 pub mod sx;
 pub mod theme_mode;
 pub mod typography;
@@ -30,10 +31,11 @@ pub struct Theme {
     pub prefix: String,
     breakpoints: Breakpoints,
     palettes: HashMap<String, Palette>,
+    typography: TypographyScale,
 }
 
 static DEFAULT_THEME: Lazy<Theme> = Lazy::new(|| {
-    serde::from_str(include_str!("./theme/theme.json")).expect("could not read default theme")
+    parsing::from_str(include_str!("./theme/theme.json")).expect("could not read default theme")
 });
 
 impl Default for Theme {
@@ -52,6 +54,7 @@ impl Theme {
             prefix: prefix.as_ref().to_string(),
             breakpoints: Default::default(),
             palettes: Default::default(),
+            typography: Default::default(),
         }
     }
 
@@ -96,6 +99,16 @@ impl Theme {
     /// Gets a mutable reference to the breakpoints object
     pub fn breakpoints_mut(&mut self) -> &mut Breakpoints {
         &mut self.breakpoints
+    }
+
+    /// Gets the typography scale
+    pub fn typography(&self) -> &TypographyScale {
+        &self.typography
+    }
+
+    /// Gets the typography scale
+    pub fn typography_mut(&mut self) -> &mut TypographyScale {
+        &mut self.typography
     }
 }
 

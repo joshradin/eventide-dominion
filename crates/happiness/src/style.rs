@@ -1,8 +1,8 @@
 //! Controls the general style and approach of components
 
+use serde::{Deserialize, Serialize};
 use std::env::var;
 use std::fmt::{Display, Formatter};
-use serde::{Deserialize, Serialize};
 use strum::{AsRefStr, EnumIter, IntoEnumIterator};
 use yew::html::{ImplicitClone, IntoPropValue};
 
@@ -70,8 +70,10 @@ impl Display for Color {
 }
 
 /// General size descriptions
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, AsRefStr, EnumIter, Serialize, Deserialize)]
-#[serde(rename_all="lowercase")]
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, Hash, AsRefStr, EnumIter, Serialize, Deserialize,
+)]
+#[serde(rename_all = "lowercase")]
 pub enum Size {
     Xs,
     Sm,

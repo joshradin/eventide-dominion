@@ -1,9 +1,10 @@
+use std::fmt::{Debug, Formatter};
+use std::str::FromStr;
+use std::sync::{Arc, Mutex};
+
 use crate::theme::sx::sx_value_parsing::{parse_sx_value, ParseSxValueError};
 use crate::theme::{Color, Theme, PALETTE_SELECTOR_REGEX};
 use crate::Sx;
-use std::fmt::{Debug, Formatter};
-use std::str::FromStr;
-use std::sync::Arc;
 
 /// An sx value
 #[derive(Debug, PartialEq, Clone)]
@@ -118,7 +119,7 @@ impl FromStr for SxValue {
 #[derive(Clone)]
 pub struct FnSxValue {
     id: u64,
-    callback: Arc<dyn Fn(&Theme) -> SxValue>,
+    callback: Arc<Mutex<dyn Fn(&Theme) -> SxValue + Send>>,
 }
 
 impl PartialEq for FnSxValue {
@@ -128,18 +129,19 @@ impl PartialEq for FnSxValue {
 }
 
 impl FnSxValue {
-    pub fn new<R, F: Fn(&Theme) -> R + 'static>(callback: F) -> Self
+    pub fn new<R, F: Fn(&Theme) -> R + Send + 'static>(callback: F) -> Self
     where
         R: Into<SxValue>,
     {
         Self {
             id: rand::random(),
-            callback: Arc::new(move |theme: &Theme| (callback)(theme).into()),
+            callback: Arc::new(Mutex::new(move |theme: &Theme| (callback)(theme).into())),
         }
     }
 
     pub fn apply(&self, theme: &Theme) -> SxValue {
-        (self.callback)(theme)
+        let callback = self.callback.lock().expect("callback is poisoned");
+        (callback)(theme)
     }
 }
 

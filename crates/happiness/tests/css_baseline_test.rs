@@ -38,11 +38,9 @@ fn Main() -> Html {
 
     html! {
         <Sheet variant={"outlined"} color={"success"}>
-            <Typography>
-                {"Hello, "}<Typography>{"World!"}</Typography>
-            </Typography>
+            <Typography level="title-md">{"Hello, world"}</Typography>
+            <Typography level="body-md">{"Welcome to the happy style system, a better way of writing text in yew"}</Typography>
             <button {onclick}>{format!("{:?}", mode)}</button>
-
         </Sheet>
     }
 }

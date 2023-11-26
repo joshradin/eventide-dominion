@@ -6,11 +6,11 @@ use std::io::Write;
 
 use heck::ToKebabCase;
 
+use crate::{Error, Sx};
 use crate::system_props::{CssPropertyTranslator, TranslationUnit};
 use crate::theme::sx::sx_value::SxValue;
-use crate::theme::theme_mode::ThemeMode;
 use crate::theme::Theme;
-use crate::{Error, Sx};
+use crate::theme::theme_mode::ThemeMode;
 
 /// Converts sx to css
 pub fn sx_to_css<'a>(
@@ -116,8 +116,10 @@ fn property_to_declaration<'a, 'b: 'a>(
             let key = query_stack.iter().map(|s| translator.translate(s)).fold(
                 String::new(),
                 |accum, next| {
-                    if next.starts_with(&['#', '.', '>', '~', '+', '[']) {
+                    if next.starts_with(&['>', '~', '+', ',']) {
                         format!("{}{}", accum, next)
+                    } else if next.starts_with("&") {
+                        format!("{}{}", accum, next.strip_prefix("&").unwrap())
                     } else {
                         format!("{} {}", accum, next)
                     }
@@ -139,17 +141,31 @@ fn property_to_declaration<'a, 'b: 'a>(
     }
 }
 
+pub static CSS_SELECTOR_OPERATORS: &[char] = &['.', '+', '>', '~', '&', ','];
+
 /// Converts to css property
 
 pub fn to_property(key: impl AsRef<str>) -> String {
     let key = key.as_ref();
-    if (key.starts_with('[') && key.ends_with(']')) || key.starts_with(['.', '+', '>', '~']) {
+    if (key.starts_with('[') && key.ends_with(']')) || key.starts_with(CSS_SELECTOR_OPERATORS) {
         key.to_string()
     } else {
-        key.split("-")
-            .map(ToKebabCase::to_kebab_case)
-            .collect::<Vec<String>>()
-            .join("-")
+        key.split_inclusive(CSS_SELECTOR_OPERATORS)
+            .map(|key_part| {
+                let selector_index = key_part.rfind(CSS_SELECTOR_OPERATORS);
+                let selector_op = selector_index.as_ref().map(|index| &key_part[*index..]);
+
+                let reworked= selector_index.map(|index| &key_part[..index])
+                    .unwrap_or(key_part)
+                    .split('-')
+                   .map(ToKebabCase::to_kebab_case)
+                   .collect::<Vec<String>>()
+                   .join("-");
+
+                format!("{reworked}{}", selector_op.unwrap_or(""))
+            })
+            .collect::<String>()
+
     }
 }
 
@@ -219,8 +235,6 @@ impl Display for Declaration {
 
 #[cfg(test)]
 mod tests {
-    use stylist::StyleSource;
-
     use crate::sx;
 
     use super::*;
@@ -242,7 +256,7 @@ mod tests {
         let sx = sx! {
             "div": sx! {
                 "--color": "common.black",
-                "h1": sx! {
+                "&[style=distributed]": sx! {
                     "font-family": "monospace"
                 }
             }

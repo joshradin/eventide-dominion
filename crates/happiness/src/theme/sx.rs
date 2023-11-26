@@ -6,6 +6,7 @@ use gloo::history::query::FromQuery;
 use heck::{ToKebabCase, ToLowerCamelCase, ToTrainCase};
 use indexmap::map::Entry;
 use indexmap::IndexMap;
+use serde::Deserialize;
 use std::fmt::Debug;
 use std::ops::Index;
 use std::str::FromStr;

@@ -6,24 +6,42 @@
   "version": "1.0.0",
   "type": "object",
   "properties": {
+    "prefix": {
+      "type": "string"
+    },
     "palettes": {
       "type": "object",
       "description": "The palettes objects defines the different palettes that are available within the schema",
-      "properties": {
-        "prefix": {
-          "type": "string"
-        }
-      },
       "patternProperties": {
         "[a-zA-Z_]\\w*": {
           "$ref": "#/$defs/palette"
         }
       },
       "additionalProperties": false
+    },
+    "typography": {
+      "type": "object",
+      "description": "provides layout details for object levels",
+      "patternProperties": {
+        "h[1-4]": {
+          "$ref": "#/$defs/typography_scale",
+          "description": "Header levels h1-h4"
+        },
+        "(body|title)-(xs|sm|md|lg|xl)": {
+          "$ref": "#/$defs/typography_scale",
+          "description": "Body or title levels"
+        },
+        "\\w[\\w-]*\\w": {
+          "$ref": "#/$defs/typography_scale",
+          "description": "Custom typography levels"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": [
-    "palettes"
+    "palettes",
+    "typography"
   ],
   "$defs": {
     "palette": {
@@ -195,6 +213,11 @@
           ]
         }
       ]
+    },
+    "typography_scale": {
+      "palette": {
+
+      }
     }
   }
 }

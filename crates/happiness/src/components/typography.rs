@@ -3,11 +3,14 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use yew::{Children, classes, ContextProvider, function_component, html, Html, html_nested, Properties};
+use yew::{
+    Children, classes, ContextProvider, function_component, html, Html, html_nested,
+    Properties,
+};
 use yew::html::IntoPropValue;
 
-use crate::style::Size;
 use crate::Sx;
+use crate::style::Size;
 use crate::system::StylingBox;
 use crate::theme::typography::TypographyLevel;
 

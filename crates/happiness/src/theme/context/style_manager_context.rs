@@ -5,6 +5,7 @@ use cfg_if::cfg_if;
 use gloo::utils::document;
 use std::ops::Deref;
 use std::rc::Rc;
+use minifier::css::Minified;
 use stylist::ast::ToStyleStr;
 use stylist::manager::StyleManager;
 use wasm_bindgen::JsCast;
@@ -35,7 +36,21 @@ impl StyleManagerContext {
             let style_element = document.create_element("style")?;
             let theme_name = format!("theme-{}-main", theme.prefix);
             style_element.set_attribute("data-style", &theme_name)?;
-            style_element.set_text_content(Some(&css.to_style_str(None)));
+            let base_css = css.to_style_str(None);
+
+            if option_env!("MINIFY_CSS").is_some() {
+                match minifier::css::minify(&base_css) {
+                    Ok(minified) => {
+                        style_element.set_text_content(Some(&minified.to_string()));
+                    }
+                    Err(non_minified) => {
+                        style_element.set_text_content(Some(non_minified));
+                    }
+                }
+            } else {
+                style_element.set_text_content(Some(&base_css));
+            }
+
 
             let list = container.child_nodes();
             let len = list.length();

@@ -1,4 +1,51 @@
 {
+  "typography": {
+    "body-xs": {
+      "fontWeight": 400,
+      "fontSize": "8px"
+    },
+    "body-sm": {
+      "fontWeight": 400,
+      "fontSize": "12px"
+    },
+    "body-md": {
+      "fontWeight": 400,
+      "fontSize": "16px"
+    },
+    "body-lg": {
+      "fontWeight": 400,
+      "fontSize": "20px"
+    },
+    "body-xl": {
+      "fontWeight": 400,
+      "fontSize": "24px"
+    },
+    "title-xs": {
+      "fontWeight": 700,
+      "fontSize": "16px",
+      "lineHeight": "24px"
+    },
+    "title-sm": {
+      "fontWeight": 700,
+      "fontSize": "20px",
+      "lineHeight": "28px"
+    },
+    "title-md": {
+      "fontWeight": 700,
+      "fontSize": "24px",
+      "lineHeight": "32px"
+    },
+    "title-lg": {
+      "fontWeight": 700,
+      "fontSize": "28px",
+      "lineHeight": "36px"
+    },
+    "title-xl": {
+      "fontWeight": 700,
+      "fontSize": "32px",
+      "lineHeight": "40px"
+    }
+  },
   "palettes": {
     "common": {
       "selectors": {
